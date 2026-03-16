@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_localizations.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -9,11 +10,10 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // Thresholds sent to watch via shared prefs (watch reads them)
-  double _freeFallThreshold = 0.5; // g
-  double _impactThreshold = 2.5;   // g
-  double _tiltThreshold = 45.0;    // degrees
-  int _freeFallMinMs = 80;          // ms
+  double _freeFallThreshold = 0.5;
+  double _impactThreshold = 2.5;
+  double _tiltThreshold = 45.0;
+  int _freeFallMinMs = 80;
   bool _loading = true;
 
   static const _kFreeFall = 'thresh_freefall';
@@ -39,6 +39,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_kFreeFall, _freeFallThreshold);
     await prefs.setDouble(_kImpact, _impactThreshold);
@@ -46,22 +47,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setInt(_kFreeFallMs, _freeFallMinMs);
     if (mounted) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Settings saved')));
+          .showSnackBar(SnackBar(content: Text(l10n.settingsSaved)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF16213E),
-        title: const Text('Settings', style: TextStyle(color: Colors.white)),
+        title: Text(l10n.settingsTitle,
+            style: const TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           TextButton(
             onPressed: _save,
-            child: const Text('Save', style: TextStyle(color: Colors.white)),
+            child: Text(l10n.save,
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -70,56 +75,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                _sectionHeader('PSP Fall Detection Thresholds'),
+                _sectionHeader(l10n.thresholdsSection),
                 const SizedBox(height: 8),
-                _infoCard(
-                  'These thresholds control sensitivity. Lower free-fall '
-                  'and higher impact thresholds reduce false positives. '
-                  'PSP falls often lack a free-fall phase — impact + tilt '
-                  'alone will trigger an alert.',
-                ),
+                _infoCard(l10n.thresholdsInfo),
                 const SizedBox(height: 24),
                 _sliderTile(
-                  label: 'Free-fall threshold',
+                  label: l10n.freeFallLabel,
                   value: _freeFallThreshold,
-                  unit: 'g',
+                  unit: l10n.unitG,
                   min: 0.1,
                   max: 1.0,
                   divisions: 18,
-                  description:
-                      '‖accel‖ must drop below this to detect free-fall phase',
+                  description: l10n.freeFallDesc,
                   onChanged: (v) => setState(() => _freeFallThreshold = v),
                 ),
                 _sliderTile(
-                  label: 'Impact threshold',
+                  label: l10n.impactLabel,
                   value: _impactThreshold,
-                  unit: 'g',
+                  unit: l10n.unitG,
                   min: 1.5,
                   max: 5.0,
                   divisions: 35,
-                  description:
-                      '‖accel‖ spike must exceed this to detect impact',
+                  description: l10n.impactDesc,
                   onChanged: (v) => setState(() => _impactThreshold = v),
                 ),
                 _sliderTile(
-                  label: 'Tilt threshold',
+                  label: l10n.tiltLabel,
                   value: _tiltThreshold,
-                  unit: '°',
+                  unit: l10n.unitDeg,
                   min: 20.0,
                   max: 90.0,
                   divisions: 70,
-                  description:
-                      'Angle from upright must exceed this after impact',
+                  description: l10n.tiltDesc,
                   onChanged: (v) => setState(() => _tiltThreshold = v),
                 ),
                 _sliderTile(
-                  label: 'Min free-fall duration',
+                  label: l10n.freeFallDurationLabel,
                   value: _freeFallMinMs.toDouble(),
-                  unit: 'ms',
+                  unit: l10n.unitMs,
                   min: 40,
                   max: 200,
                   divisions: 32,
-                  description: 'Minimum duration of free-fall phase',
+                  description: l10n.freeFallDurationDesc,
                   onChanged: (v) =>
                       setState(() => _freeFallMinMs = v.round()),
                 ),
@@ -135,8 +132,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     await _save();
                   },
                   icon: const Icon(Icons.restore, color: Colors.white70),
-                  label: const Text('Reset to defaults',
-                      style: TextStyle(color: Colors.white70)),
+                  label: Text(l10n.resetDefaults,
+                      style: const TextStyle(color: Colors.white70)),
                   style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.white24)),
                 ),
@@ -171,7 +168,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String description,
     required ValueChanged<double> onChanged,
   }) {
-    final displayVal = unit == 'ms'
+    final displayVal = unit == AppLocalizations.of(context).unitMs
         ? '${value.round()}$unit'
         : '${value.toStringAsFixed(1)}$unit';
 
@@ -189,7 +186,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               Text(displayVal,
                   style: const TextStyle(
-                      color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
+                      color: Colors.orangeAccent,
+                      fontWeight: FontWeight.bold)),
             ],
           ),
           Text(description,

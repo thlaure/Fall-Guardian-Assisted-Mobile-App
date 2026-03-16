@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
 import 'screens/fall_alert_screen.dart';
 import 'services/watch_communication_service.dart';
@@ -28,9 +30,15 @@ class _FallGuardianAppState extends State<FallGuardianApp> {
   }
 
   void _onFallDetected(int timestamp) async {
-    await NotificationService().showFallDetectedNotification();
+    // Get localized notification strings from current context
+    final context = _navigatorKey.currentContext;
+    final l10n = context != null ? AppLocalizations.of(context) : null;
 
-    // Navigate to alert screen on top of whatever is showing
+    await NotificationService().showFallDetectedNotification(
+      title: l10n?.notifTitle ?? '⚠️ Fall Detected',
+      body: l10n?.notifBody ?? 'Open app to cancel or send alert in 30 seconds',
+    );
+
     _navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder: (_) => FallAlertScreen(fallTimestamp: timestamp),
@@ -51,6 +59,17 @@ class _FallGuardianAppState extends State<FallGuardianApp> {
       navigatorKey: _navigatorKey,
       title: 'Fall Guardian',
       debugShowCheckedModeBanner: false,
+      // ── Localization ──────────────────────────────────────────────────────
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      // English is the fallback when the device locale is not supported
+      locale: null, // null = follow device locale automatically
+      // ─────────────────────────────────────────────────────────────────────
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF533483),

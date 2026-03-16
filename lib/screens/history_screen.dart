@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_localizations.dart';
 import '../models/fall_event.dart';
 import '../repositories/fall_events_repository.dart';
 
@@ -30,19 +31,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _clearHistory() async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Clear history?'),
-        content:
-            const Text('This will permanently delete all fall event records.'),
+        title: Text(l10n.clearHistoryTitle),
+        content: Text(l10n.clearHistoryBody),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+              child: Text(l10n.cancel)),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Clear', style: TextStyle(color: Colors.red))),
+              child: Text(l10n.clear,
+                  style: const TextStyle(color: Colors.red))),
         ],
       ),
     );
@@ -54,12 +56,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF16213E),
-        title:
-            const Text('Fall History', style: TextStyle(color: Colors.white)),
+        title: Text(l10n.historyTitle,
+            style: const TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           if (_events.isNotEmpty)
@@ -72,22 +76,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _events.isEmpty
-              ? const Center(
+              ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.history, size: 72, color: Colors.white24),
-                      SizedBox(height: 16),
-                      Text('No fall events recorded',
-                          style:
-                              TextStyle(color: Colors.white54, fontSize: 18)),
+                      const Icon(Icons.history, size: 72, color: Colors.white24),
+                      const SizedBox(height: 16),
+                      Text(l10n.historyEmpty,
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 18)),
                     ],
                   ),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _events.length,
-                  itemBuilder: (_, i) => _EventTile(event: _events[i]),
+                  itemBuilder: (_, i) =>
+                      _EventTile(event: _events[i], l10n: l10n),
                 ),
     );
   }
@@ -95,20 +100,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
 class _EventTile extends StatelessWidget {
   final FallEvent event;
-  const _EventTile({required this.event});
+  final AppLocalizations l10n;
+  const _EventTile({required this.event, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
     final fmt = DateFormat('MMM d, yyyy — h:mm a');
     final (icon, color, label) = switch (event.status) {
-      FallEventStatus.alertSent => (Icons.send, Colors.redAccent, 'Alert Sent'),
-      FallEventStatus.alertFailed => (Icons.sms_failed, Colors.deepOrange, 'SMS Failed'),
-      FallEventStatus.cancelled => (Icons.cancel, Colors.greenAccent, 'Cancelled'),
-      FallEventStatus.timedOutNoSms => (
-          Icons.timer_off,
-          Colors.orangeAccent,
-          'Timed Out'
-        ),
+      FallEventStatus.alertSent =>
+        (Icons.send, Colors.redAccent, l10n.statusAlertSent),
+      FallEventStatus.alertFailed =>
+        (Icons.sms_failed, Colors.deepOrange, l10n.statusAlertFailed),
+      FallEventStatus.cancelled =>
+        (Icons.cancel, Colors.greenAccent, l10n.statusCancelled),
+      FallEventStatus.timedOutNoSms =>
+        (Icons.timer_off, Colors.orangeAccent, l10n.statusTimedOut),
     };
 
     return Card(
@@ -135,17 +141,19 @@ class _EventTile extends StatelessWidget {
             ),
             if (event.notifiedContacts.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text('Notified: ${event.notifiedContacts.join(', ')}',
+              Text(l10n.notifiedLabel(event.notifiedContacts.join(', ')),
                   style:
                       const TextStyle(color: Colors.white70, fontSize: 13)),
             ],
             if (event.latitude != null && event.longitude != null) ...[
               const SizedBox(height: 4),
               Text(
-                  'Location: ${event.latitude!.toStringAsFixed(5)}, '
-                  '${event.longitude!.toStringAsFixed(5)}',
-                  style:
-                      const TextStyle(color: Colors.white38, fontSize: 12)),
+                l10n.locationLabel(
+                    '${event.latitude!.toStringAsFixed(5)}, '
+                    '${event.longitude!.toStringAsFixed(5)}'),
+                style:
+                    const TextStyle(color: Colors.white38, fontSize: 12),
+              ),
             ],
           ],
         ),

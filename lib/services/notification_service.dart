@@ -19,13 +19,16 @@ class NotificationService {
     );
 
     await _plugin.initialize(
-      const InitializationSettings(
-          android: androidSettings, iOS: iosSettings),
+      const InitializationSettings(android: androidSettings, iOS: iosSettings),
     );
     _initialized = true;
   }
 
-  Future<void> showFallDetectedNotification() async {
+  /// Shows the fall-detected notification with localized strings.
+  Future<void> showFallDetectedNotification({
+    required String title,
+    required String body,
+  }) async {
     const androidDetails = AndroidNotificationDetails(
       _channelId,
       _channelName,
@@ -40,8 +43,8 @@ class NotificationService {
 
     await _plugin.show(
       1,
-      '⚠️ Fall Detected',
-      'Open app to cancel or send alert in 30 seconds',
+      title,
+      body,
       const NotificationDetails(android: androidDetails, iOS: iosDetails),
     );
   }

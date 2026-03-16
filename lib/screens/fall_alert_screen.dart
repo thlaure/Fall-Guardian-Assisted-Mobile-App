@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import '../models/contact.dart';
+import '../l10n/app_localizations.dart';
 import '../models/fall_event.dart';
 import '../repositories/contacts_repository.dart';
 import '../repositories/fall_events_repository.dart';
@@ -61,21 +61,27 @@ class _FallAlertScreenState extends State<FallAlertScreen>
 
   Future<void> _sendAlert() async {
     if (_dismissed || _sending) return;
+    final l10n = AppLocalizations.of(context);
+
     setState(() {
       _sending = true;
-      _statusMessage = 'Getting your location...';
+      _statusMessage = l10n.gettingLocation;
     });
 
-    final locationService = LocationService();
-    final Position? position = await locationService.getCurrentPosition();
+    final Position? position = await LocationService().getCurrentPosition();
 
-    setState(() => _statusMessage = 'Sending SMS alerts...');
+    setState(() => _statusMessage = l10n.sendingSms);
+
+    // Build the localized SMS message here, where we have context
+    final locationLine = (position != null)
+        ? l10n.smsLocationLine(position.latitude, position.longitude)
+        : l10n.smsLocationUnavailable;
+    final smsBody = l10n.smsMessage(locationLine);
 
     final contacts = await ContactsRepository().getAll();
     final notified = await SmsService().sendFallAlert(
       contacts: contacts,
-      latitude: position?.latitude,
-      longitude: position?.longitude,
+      message: smsBody,
     );
 
     final smsFailed = contacts.isNotEmpty && notified.isEmpty;
@@ -88,14 +94,13 @@ class _FallAlertScreenState extends State<FallAlertScreen>
       notifiedContacts: notified,
     );
     await FallEventsRepository().add(event);
-
     await NotificationService().cancelAll();
 
     setState(() => _statusMessage = smsFailed
-        ? '⚠️ SMS failed to send. Call your contacts manually!'
-        : 'Alert sent to ${notified.length} contact(s).');
+        ? l10n.smsFailed
+        : l10n.alertSentCount(notified.length));
 
-    await Future.delayed(const Duration(seconds: smsFailed ? 5 : 2));
+    await Future.delayed(Duration(seconds: smsFailed ? 5 : 2));
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -123,10 +128,11 @@ class _FallAlertScreenState extends State<FallAlertScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final progress = _remaining / _countdownSeconds;
 
-    return WillPopScope(
-      onWillPop: () async => false, // prevent back button dismiss
+    return PopScope(
+      canPop: false,
       child: Scaffold(
         backgroundColor: const Color(0xFF1A0000),
         body: SafeArea(
@@ -145,20 +151,20 @@ class _FallAlertScreenState extends State<FallAlertScreen>
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Fall Detected!',
+                Text(
+                  l10n.fallAlertTitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Your emergency contacts will be notified unless you cancel.',
+                Text(
+                  l10n.fallAlertBody,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                  style: const TextStyle(color: Colors.white70, fontSize: 16),
                 ),
                 const SizedBox(height: 40),
                 _sending
@@ -205,14 +211,16 @@ class _FallAlertScreenState extends State<FallAlertScreen>
                             height: 60,
                             child: ElevatedButton.icon(
                               onPressed: _cancel,
-                              icon: const Icon(Icons.check_circle, size: 28),
-                              label: const Text("I'm OK — Cancel Alert",
-                                  style: TextStyle(fontSize: 18)),
+                              icon:
+                                  const Icon(Icons.check_circle, size: 28),
+                              label: Text(l10n.cancelAlert,
+                                  style: const TextStyle(fontSize: 18)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16)),
+                                    borderRadius:
+                                        BorderRadius.circular(16)),
                               ),
                             ),
                           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'contacts_screen.dart';
 import 'history_screen.dart';
 import 'settings_screen.dart';
@@ -8,13 +9,15 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF16213E),
-        title: const Text(
-          'Fall Guardian',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          l10n.appTitle,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
@@ -32,12 +35,12 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 16),
-            _StatusCard(),
+            _StatusCard(l10n: l10n),
             const SizedBox(height: 32),
             _NavButton(
               icon: Icons.people,
-              label: 'Emergency Contacts',
-              subtitle: 'Manage who gets alerted',
+              label: l10n.homeContactsTitle,
+              subtitle: l10n.homeContactsSubtitle,
               color: const Color(0xFF0F3460),
               onTap: () => Navigator.push(
                 context,
@@ -47,8 +50,8 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 16),
             _NavButton(
               icon: Icons.history,
-              label: 'Fall History',
-              subtitle: 'Review past fall events',
+              label: l10n.homeHistoryTitle,
+              subtitle: l10n.homeHistorySubtitle,
               color: const Color(0xFF0F3460),
               onTap: () => Navigator.push(
                 context,
@@ -56,11 +59,10 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            const Text(
-              'Monitoring active on your watch.\n'
-              'Keep the watch app running in the background.',
+            Text(
+              l10n.homeFootnote,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white38, fontSize: 13),
+              style: const TextStyle(color: Colors.white38, fontSize: 13),
             ),
             const SizedBox(height: 16),
           ],
@@ -71,6 +73,9 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _StatusCard extends StatelessWidget {
+  final AppLocalizations l10n;
+  const _StatusCard({required this.l10n});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -102,19 +107,19 @@ class _StatusCard extends StatelessWidget {
             child: const Icon(Icons.shield, color: Colors.greenAccent, size: 40),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Protected',
-            style: TextStyle(
+          Text(
+            l10n.homeStatusTitle,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'PSP fall detection is active.\nA 30-second alert will appear if a fall is detected.',
+          Text(
+            l10n.homeStatusBody,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
         ],
       ),
@@ -161,8 +166,8 @@ class _NavButton extends StatelessWidget {
                             fontSize: 16,
                             fontWeight: FontWeight.w600)),
                     Text(subtitle,
-                        style: const TextStyle(
-                            color: Colors.white60, fontSize: 13)),
+                        style:
+                            const TextStyle(color: Colors.white60, fontSize: 13)),
                   ],
                 ),
               ),

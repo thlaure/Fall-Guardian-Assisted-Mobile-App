@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import '../l10n/app_localizations.dart';
 import '../models/contact.dart';
 import '../repositories/contacts_repository.dart';
 
@@ -52,19 +53,20 @@ class _ContactsScreenState extends State<ContactsScreen> {
   }
 
   Future<void> _deleteContact(Contact contact) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Remove contact?'),
-        content: Text('Remove ${contact.name} from emergency contacts?'),
+        title: Text(l10n.contactsScreenTitle),
+        content: Text(l10n.contactsRemoveTitle(contact.name)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+              child: Text(l10n.cancel)),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child:
-                  const Text('Remove', style: TextStyle(color: Colors.red))),
+              child: Text(l10n.remove,
+                  style: const TextStyle(color: Colors.red))),
         ],
       ),
     );
@@ -76,12 +78,14 @@ class _ContactsScreenState extends State<ContactsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF16213E),
-        title: const Text('Emergency Contacts',
-            style: TextStyle(color: Colors.white)),
+        title: Text(l10n.contactsScreenTitle,
+            style: const TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       floatingActionButton: FloatingActionButton(
@@ -92,7 +96,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _contacts.isEmpty
-              ? _EmptyState(onAdd: _addContact)
+              ? _EmptyState(l10n: l10n, onAdd: _addContact)
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _contacts.length,
@@ -107,8 +111,9 @@ class _ContactsScreenState extends State<ContactsScreen> {
 }
 
 class _EmptyState extends StatelessWidget {
+  final AppLocalizations l10n;
   final VoidCallback onAdd;
-  const _EmptyState({required this.onAdd});
+  const _EmptyState({required this.l10n, required this.onAdd});
 
   @override
   Widget build(BuildContext context) {
@@ -118,17 +123,17 @@ class _EmptyState extends StatelessWidget {
         children: [
           const Icon(Icons.people_outline, size: 72, color: Colors.white24),
           const SizedBox(height: 16),
-          const Text('No contacts yet',
-              style: TextStyle(color: Colors.white54, fontSize: 18)),
+          Text(l10n.contactsEmpty,
+              style: const TextStyle(color: Colors.white54, fontSize: 18)),
           const SizedBox(height: 8),
-          const Text('Add family members to notify on fall detection.',
-              style: TextStyle(color: Colors.white38, fontSize: 14),
+          Text(l10n.contactsEmptyHint,
+              style: const TextStyle(color: Colors.white38, fontSize: 14),
               textAlign: TextAlign.center),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: onAdd,
             icon: const Icon(Icons.add),
-            label: const Text('Add Contact'),
+            label: Text(l10n.addContact),
             style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF533483)),
           ),
@@ -161,8 +166,8 @@ class _ContactTile extends StatelessWidget {
           child: Text(contact.name[0].toUpperCase(),
               style: const TextStyle(color: Colors.white)),
         ),
-        title:
-            Text(contact.name, style: const TextStyle(color: Colors.white)),
+        title: Text(contact.name,
+            style: const TextStyle(color: Colors.white)),
         subtitle: Text(contact.phone,
             style: const TextStyle(color: Colors.white60)),
         trailing: Row(
@@ -210,9 +215,11 @@ class _ContactDialogState extends State<_ContactDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isEditing = widget.existing != null;
+
     return AlertDialog(
-      title: Text(isEditing ? 'Edit Contact' : 'Add Contact'),
+      title: Text(isEditing ? l10n.editContact : l10n.addContact),
       content: Form(
         key: _formKey,
         child: Column(
@@ -220,19 +227,21 @@ class _ContactDialogState extends State<_ContactDialog> {
           children: [
             TextFormField(
               controller: _name,
-              decoration: const InputDecoration(
-                  labelText: 'Name', prefixIcon: Icon(Icons.person)),
+              decoration: InputDecoration(
+                  labelText: l10n.contactNameLabel,
+                  prefixIcon: const Icon(Icons.person)),
               validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
+                  v == null || v.trim().isEmpty ? l10n.required_ : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _phone,
-              decoration: const InputDecoration(
-                  labelText: 'Phone Number', prefixIcon: Icon(Icons.phone)),
+              decoration: InputDecoration(
+                  labelText: l10n.contactPhoneLabel,
+                  prefixIcon: const Icon(Icons.phone)),
               keyboardType: TextInputType.phone,
               validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
+                  v == null || v.trim().isEmpty ? l10n.required_ : null,
             ),
           ],
         ),
@@ -240,7 +249,7 @@ class _ContactDialogState extends State<_ContactDialog> {
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel')),
+            child: Text(l10n.cancel)),
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
@@ -252,7 +261,7 @@ class _ContactDialogState extends State<_ContactDialog> {
               Navigator.pop(context, contact);
             }
           },
-          child: Text(isEditing ? 'Save' : 'Add'),
+          child: Text(isEditing ? l10n.save : l10n.addContact),
         ),
       ],
     );

@@ -3,29 +3,21 @@ import '../models/contact.dart';
 
 class SmsService {
   /// Sends a fall alert SMS to all contacts.
-  /// Returns list of contact names successfully notified.
+  ///
+  /// [message] is the fully localized message string, built by the caller
+  /// using [AppLocalizations] (which has access to BuildContext).
+  ///
+  /// Returns the list of contact names to which the SMS was sent.
   Future<List<String>> sendFallAlert({
     required List<Contact> contacts,
-    required double? latitude,
-    required double? longitude,
+    required String message,
   }) async {
     if (contacts.isEmpty) return [];
-
-    final locationText = (latitude != null && longitude != null)
-        ? '\nLocation: https://maps.google.com/?q=$latitude,$longitude'
-        : '\nLocation: unavailable';
-
-    final message =
-        '🚨 FALL ALERT: Your loved one may have fallen and needs help.'
-        '$locationText\n'
-        'Please call or go check on them immediately.\n'
-        '– Fall Guardian App';
 
     final phones = contacts.map((c) => c.phone).toList();
 
     try {
       final result = await sendSMS(message: message, recipients: phones);
-      // flutter_sms returns 'sent' or 'cancelled'
       if (result == 'sent') {
         return contacts.map((c) => c.name).toList();
       }
