@@ -50,7 +50,7 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
         didReceiveMessage message: [String: Any],
         replyHandler: @escaping ([String: Any]) -> Void
     ) {
-        session(session, didReceiveMessage: message)
+        self.session(session, didReceiveMessage: message)
         replyHandler(["status": "received"])
     }
 
