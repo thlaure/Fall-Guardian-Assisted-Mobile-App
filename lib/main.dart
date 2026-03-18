@@ -29,7 +29,7 @@ class _FallGuardianAppState extends State<FallGuardianApp> {
     _watchService.setFallDetectedCallback(_onFallDetected);
   }
 
-  void _onFallDetected(int timestamp) async {
+  Future<void> _onFallDetected(int timestamp) async {
     // Get localized notification strings from current context
     final context = _navigatorKey.currentContext;
     final l10n = context != null ? AppLocalizations.of(context) : null;
