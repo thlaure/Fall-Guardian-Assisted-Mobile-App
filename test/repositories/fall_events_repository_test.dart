@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fall_guardian/models/fall_event.dart';
@@ -71,6 +72,39 @@ void main() {
       expect(restored.latitude, 48.8566);
       expect(restored.longitude, 2.3522);
       expect(restored.notifiedContacts, ['Alice', 'Bob']);
+    });
+
+    test('getAll_skipsCorruptedJsonEntries', () async {
+      // Build a valid event JSON string.
+      final validEvent = FallEvent(
+        id: 'valid-1',
+        timestamp: DateTime(2024, 3, 1),
+        status: FallEventStatus.cancelled,
+      );
+      final validJson = jsonEncode(validEvent.toJson());
+
+      // Inject one corrupted and one valid entry directly into SharedPreferences.
+      SharedPreferences.setMockInitialValues({
+        'fall_events': ['invalid json{{{', validJson],
+      });
+      repo = FallEventsRepository();
+
+      final all = await repo.getAll();
+      expect(all.length, 1,
+          reason: 'Corrupted entry must be silently skipped');
+      expect(all.first.id, 'valid-1');
+    });
+
+    test('clear_isIdempotent', () async {
+      await repo.add(FallEvent(
+        id: '1',
+        timestamp: DateTime(2024, 1, 1),
+        status: FallEventStatus.cancelled,
+      ));
+      await repo.clear();
+      // Second clear on an already-empty repository must not throw.
+      await repo.clear();
+      expect(await repo.getAll(), isEmpty);
     });
   });
 }

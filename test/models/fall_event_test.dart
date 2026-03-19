@@ -45,5 +45,43 @@ void main() {
         expect(restored.status, status);
       }
     });
+
+    test('fromJson_missingNotifiedContacts_defaultsToEmpty', () {
+      final json = {
+        'id': 'abc',
+        'timestamp': timestamp.toIso8601String(),
+        'status': 'cancelled',
+        'latitude': null,
+        'longitude': null,
+        // 'notifiedContacts' key intentionally omitted
+      };
+      final event = FallEvent.fromJson(json);
+      expect(event.notifiedContacts, isEmpty);
+    });
+
+    test('fromJson_nullNotifiedContacts_defaultsToEmpty', () {
+      final json = {
+        'id': 'abc',
+        'timestamp': timestamp.toIso8601String(),
+        'status': 'alertSent',
+        'latitude': null,
+        'longitude': null,
+        'notifiedContacts': null,
+      };
+      final event = FallEvent.fromJson(json);
+      expect(event.notifiedContacts, isEmpty);
+    });
+
+    test('fromJson_invalidStatus_throwsError', () {
+      final json = {
+        'id': 'abc',
+        'timestamp': timestamp.toIso8601String(),
+        'status': 'bogusStatus',
+        'latitude': null,
+        'longitude': null,
+        'notifiedContacts': <String>[],
+      };
+      expect(() => FallEvent.fromJson(json), throwsA(isA<ArgumentError>()));
+    });
   });
 }

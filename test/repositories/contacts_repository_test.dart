@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fall_guardian/models/contact.dart';
@@ -66,6 +67,22 @@ void main() {
       final all = await repo.getAll();
       expect(all.length, 1);
       expect(all.first.name, 'Bob');
+    });
+
+    test('getAll_skipsCorruptedJsonEntries', () async {
+      const validContact = Contact(id: '42', name: 'Alice', phone: '+1');
+      final validJson = jsonEncode(validContact.toJson());
+
+      // Inject corrupted + valid entries directly into SharedPreferences.
+      SharedPreferences.setMockInitialValues({
+        'contacts': ['not valid json!!!', validJson],
+      });
+      repo = ContactsRepository();
+
+      final all = await repo.getAll();
+      expect(all.length, 1,
+          reason: 'Corrupted entry must be silently skipped');
+      expect(all.first.id, '42');
     });
   });
 }
