@@ -29,18 +29,33 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener 
         weakInstance = java.lang.ref.WeakReference(this)
         channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
         // Handle fall event launched via intent (activity was not running)
-        intent?.getLongExtra("fall_timestamp", Long.MIN_VALUE)
-            ?.takeIf { it != Long.MIN_VALUE }
-            ?.let { sendFallDetectedToFlutter(it) }
+        if (isTrustedIntent(intent)) {
+            intent?.getLongExtra("fall_timestamp", Long.MIN_VALUE)
+                ?.takeIf { it != Long.MIN_VALUE }
+                ?.let { sendFallDetectedToFlutter(it) }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         // Handle fall event when activity is already running (singleTop)
-        intent.getLongExtra("fall_timestamp", Long.MIN_VALUE)
-            .takeIf { it != Long.MIN_VALUE }
-            ?.let { sendFallDetectedToFlutter(it) }
+        if (isTrustedIntent(intent)) {
+            intent.getLongExtra("fall_timestamp", Long.MIN_VALUE)
+                .takeIf { it != Long.MIN_VALUE }
+                ?.let { sendFallDetectedToFlutter(it) }
+        }
+    }
+
+    /**
+     * Returns true only when the intent originates from this same package.
+     * WearDataListenerService sends internal intents, so same-package intents must pass.
+     * External apps crafting a fall_timestamp intent are rejected.
+     */
+    private fun isTrustedIntent(intent: Intent?): Boolean {
+        if (intent == null) return true
+        if (intent.hasExtra("fall_timestamp").not()) return true
+        return intent.`package` == packageName || callingActivity?.packageName == packageName
     }
 
     override fun onResume() {

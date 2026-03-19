@@ -249,8 +249,12 @@ class _ContactDialogState extends State<_ContactDialog> {
                   labelText: l10n.contactPhoneLabel,
                   prefixIcon: const Icon(Icons.phone)),
               keyboardType: TextInputType.phone,
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? l10n.required_ : null,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return l10n.required_;
+                final phoneRegex = RegExp(r'^\+?[0-9\s\-().]{7,20}$');
+                if (!phoneRegex.hasMatch(v.trim())) return l10n.required_;
+                return null;
+              },
             ),
           ],
         ),
