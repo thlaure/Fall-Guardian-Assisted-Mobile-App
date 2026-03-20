@@ -14,7 +14,11 @@ import java.nio.ByteBuffer
 class WearDataListenerService : WearableListenerService() {
 
     override fun onMessageReceived(messageEvent: MessageEvent) {
-        if (messageEvent.path != "/fall_event") return
+        when (messageEvent.path) {
+            "/cancel_alert" -> { handleCancelAlert(); return }
+            "/fall_event" -> Unit
+            else -> return
+        }
         // Validate that the sender is an actually connected Wearable node.
         val connectedNodes = try {
             Tasks.await(Wearable.getNodeClient(this).connectedNodes)
@@ -37,5 +41,9 @@ class WearDataListenerService : WearableListenerService() {
             }
             startActivity(intent)
         }
+    }
+
+    private fun handleCancelAlert() {
+        MainActivity.getInstance()?.sendCancelAlertToFlutter()
     }
 }

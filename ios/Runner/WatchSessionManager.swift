@@ -39,10 +39,16 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
         _ session: WCSession,
         didReceiveMessage message: [String: Any]
     ) {
-        guard (message["event"] as? String) == "fall_detected" else { return }
-        let timestamp = message["timestamp"] as? Int ??
-            Int(Date().timeIntervalSince1970 * 1000)
-        forwardFallToFlutter(timestamp: timestamp)
+        switch message["event"] as? String {
+        case "fall_detected":
+            let timestamp = message["timestamp"] as? Int ??
+                Int(Date().timeIntervalSince1970 * 1000)
+            forwardToFlutter("onFallDetected", arguments: ["timestamp": timestamp])
+        case "alert_cancelled":
+            forwardToFlutter("onAlertCancelled", arguments: nil)
+        default:
+            break
+        }
     }
 
     func session(
@@ -54,12 +60,9 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
         replyHandler(["status": "received"])
     }
 
-    private func forwardFallToFlutter(timestamp: Int) {
+    private func forwardToFlutter(_ method: String, arguments: Any?) {
         DispatchQueue.main.async {
-            self.channel.invokeMethod(
-                "onFallDetected",
-                arguments: ["timestamp": timestamp]
-            )
+            self.channel.invokeMethod(method, arguments: arguments)
         }
     }
 }
