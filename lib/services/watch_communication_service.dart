@@ -39,4 +39,22 @@ class WatchCommunicationService {
     _onFallDetected = null;
     _onCancelAlert = null;
   }
+
+  /// Pushes threshold values to the connected watch(es).
+  /// Silently no-ops if the watch is not connected or the platform rejects the call.
+  static Future<void> pushThresholds({
+    required double freeFall,
+    required double impact,
+    required double tilt,
+    required int freeFallMs,
+  }) async {
+    try {
+      await _channel.invokeMethod('sendThresholds', {
+        'thresh_freefall': freeFall,
+        'thresh_impact': impact,
+        'thresh_tilt': tilt,
+        'thresh_freefall_ms': freeFallMs,
+      });
+    } catch (_) {}
+  }
 }

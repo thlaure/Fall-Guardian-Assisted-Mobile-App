@@ -1,6 +1,8 @@
 package com.fallguardian
 
 import android.content.Intent
+import android.util.Log
+import com.google.android.gms.wearable.Wearable
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -24,6 +26,17 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         weakInstance = java.lang.ref.WeakReference(this)
         channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        channel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "sendThresholds" -> {
+                    @Suppress("UNCHECKED_CAST")
+                    val args = call.arguments as? Map<String, Any>
+                    if (args != null) sendThresholdsToWatch(args)
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
         // Handle fall event launched via intent (activity was not running)
         if (isTrustedIntent(intent)) {
             intent?.getLongExtra("fall_timestamp", Long.MIN_VALUE)
@@ -68,6 +81,24 @@ class MainActivity : FlutterActivity() {
         runOnUiThread {
             channel.invokeMethod("onAlertCancelled", null)
         }
+    }
+
+    private fun sendThresholdsToWatch(thresholds: Map<String, Any>) {
+        val json = org.json.JSONObject(thresholds)
+        val payload = json.toString().toByteArray(Charsets.UTF_8)
+        Wearable.getNodeClient(this).connectedNodes
+            .addOnSuccessListener { nodes ->
+                nodes.forEach { node ->
+                    Wearable.getMessageClient(this)
+                        .sendMessage(node.id, "/thresholds", payload)
+                        .addOnFailureListener { e ->
+                            Log.e("MainActivity", "Failed to send thresholds to watch", e)
+                        }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.w("MainActivity", "No connected nodes for threshold sync", e)
+            }
     }
 
     override fun onDestroy() {

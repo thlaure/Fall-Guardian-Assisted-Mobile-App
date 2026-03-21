@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
+import '../services/watch_communication_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -45,6 +48,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setDouble(_kImpact, _impactThreshold);
     await prefs.setDouble(_kTilt, _tiltThreshold);
     await prefs.setInt(_kFreeFallMs, _freeFallMinMs);
+    // Push updated thresholds to connected watch(es) — fire-and-forget
+    unawaited(WatchCommunicationService.pushThresholds(
+      freeFall: _freeFallThreshold,
+      impact: _impactThreshold,
+      tilt: _tiltThreshold,
+      freeFallMs: _freeFallMinMs,
+    ));
     if (mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l10n.settingsSaved)));

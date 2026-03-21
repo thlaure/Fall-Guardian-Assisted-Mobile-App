@@ -65,6 +65,17 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
         replyHandler(["status": "received"])
     }
 
+    /// Send threshold values to the paired Apple Watch via WCSession.
+    func sendThresholds(_ thresholds: [String: Any]) {
+        guard WCSession.default.activationState == .activated else { return }
+        let message: [String: Any] = ["event": "set_thresholds", "thresholds": thresholds]
+        if WCSession.default.isReachable {
+            WCSession.default.sendMessage(message, replyHandler: nil, errorHandler: nil)
+        } else {
+            WCSession.default.transferUserInfo(message)
+        }
+    }
+
     private func forwardToFlutter(_ method: String, arguments: Any?) {
         DispatchQueue.main.async { [weak self] in
             self?.channel.invokeMethod(method, arguments: arguments)
