@@ -24,9 +24,15 @@ import WatchConnectivity
         watchSession = WatchSessionManager(channel: channel!)
         watchSession?.startSession()
         channel!.setMethodCallHandler { [weak self] call, result in
-            if call.method == "sendThresholds",
-               let args = call.arguments as? [String: Any] {
-                self?.watchSession?.sendThresholds(args)
+            switch call.method {
+            case "sendThresholds":
+                if let args = call.arguments as? [String: Any] {
+                    self?.watchSession?.sendThresholds(args)
+                }
+            case "sendCancelAlert":
+                self?.watchSession?.sendCancelAlert()
+            default:
+                break
             }
             result(nil)
         }

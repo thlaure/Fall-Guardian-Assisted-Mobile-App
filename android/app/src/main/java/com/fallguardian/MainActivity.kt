@@ -34,6 +34,10 @@ class MainActivity : FlutterActivity() {
                     if (args != null) sendThresholdsToWatch(args)
                     result.success(null)
                 }
+                "sendCancelAlert" -> {
+                    sendCancelAlertToWatch()
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -81,6 +85,17 @@ class MainActivity : FlutterActivity() {
         runOnUiThread {
             channel.invokeMethod("onAlertCancelled", null)
         }
+    }
+
+    private fun sendCancelAlertToWatch() {
+        val payload = """{"event":"alert_cancelled"}""".toByteArray(Charsets.UTF_8)
+        Wearable.getNodeClient(this).connectedNodes
+            .addOnSuccessListener { nodes ->
+                nodes.forEach { node ->
+                    Wearable.getMessageClient(this)
+                        .sendMessage(node.id, "/cancel_alert", payload)
+                }
+            }
     }
 
     private fun sendThresholdsToWatch(thresholds: Map<String, Any>) {

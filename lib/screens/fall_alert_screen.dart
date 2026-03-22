@@ -9,6 +9,7 @@ import '../repositories/fall_events_repository.dart';
 import '../services/location_service.dart';
 import '../services/sms_service.dart';
 import '../services/notification_service.dart';
+import '../services/watch_communication_service.dart';
 import 'package:uuid/uuid.dart';
 
 class FallAlertScreen extends StatefulWidget {
@@ -116,6 +117,7 @@ class _FallAlertScreenState extends State<FallAlertScreen>
   Future<void> _cancel() async {
     _timer?.cancel();
     setState(() => _dismissed = true);
+    unawaited(WatchCommunicationService.sendCancelAlert());
 
     final event = FallEvent(
       id: const Uuid().v4(),

@@ -40,6 +40,14 @@ class WatchCommunicationService {
     _onCancelAlert = null;
   }
 
+  /// Sends a cancel-alert signal to the connected watch(es).
+  /// Silently no-ops if the watch is not connected or the platform rejects the call.
+  static Future<void> sendCancelAlert() async {
+    try {
+      await _channel.invokeMethod('sendCancelAlert');
+    } catch (_) {}
+  }
+
   /// Pushes threshold values to the connected watch(es).
   /// Silently no-ops if the watch is not connected or the platform rejects the call.
   static Future<void> pushThresholds({
