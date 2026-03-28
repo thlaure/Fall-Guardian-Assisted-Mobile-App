@@ -60,9 +60,16 @@ class _FallAlertScreenState extends State<FallAlertScreen>
   }
 
   void _startCountdown() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    // Poll at 500 ms so the display stays in sync with the watch countdown.
+    // Compute remaining from the original fall timestamp so both devices
+    // show the same number regardless of message delivery latency.
+    _timer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (!mounted) return;
-      setState(() => _remaining--);
+      final elapsed =
+          DateTime.now().millisecondsSinceEpoch - widget.fallTimestamp;
+      final remaining =
+          (_countdownSeconds - elapsed ~/ 1000).clamp(0, _countdownSeconds);
+      setState(() => _remaining = remaining);
       if (_remaining <= 0) {
         timer.cancel();
         _sendAlert();

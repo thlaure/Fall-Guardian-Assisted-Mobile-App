@@ -11,6 +11,66 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
     /// Set to true when the phone alert is cancelled so the watch poll gets the right answer.
     private var alertCancelledFlag = false
 
+    // MARK: - Watch→phone cancel polling (simulator only)
+    //
+    // WCSession phone←watch is also broken in the iOS simulator when the watchOS
+    // app is deployed via xcrun simctl.  We mirror the phone→watch file-IPC trick:
+    // the watchOS sim writes /tmp/com.fallguardian.cancelFromWatch; the iOS sim
+    // polls it and forwards onAlertCancelled to Flutter when found.
+
+    private var watchCancelPollTask: Task<Void, Never>?
+    private var fallEventPollTask: Task<Void, Never>?
+
+    /// Continuously polls for a fall event written by the watchOS simulator.
+    /// WCSession watch→phone sendMessage is broken in the simulator; the watch writes
+    /// /tmp/com.fallguardian.fallEvent with the ms-since-epoch timestamp instead.
+    func startPollingForFallEvent() {
+        fallEventPollTask?.cancel()
+        #if targetEnvironment(simulator)
+        fallEventPollTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                guard !Task.isCancelled else { return }
+                let path = "/tmp/com.fallguardian.fallEvent"
+                guard FileManager.default.fileExists(atPath: path) else { continue }
+                let content = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
+                try? FileManager.default.removeItem(atPath: path)
+                let timestamp = Int(content.trimmingCharacters(in: .whitespacesAndNewlines))
+                    ?? Int(Date().timeIntervalSince1970 * 1000)
+                NSLog("[WCSession][Phone] fallEvent poll: flag file found → timestamp=\(timestamp)")
+                resetCancelContext()
+                forwardToFlutter("onFallDetected", arguments: ["timestamp": timestamp])
+                startPollingForWatchCancel()
+            }
+        }
+        #endif
+    }
+
+    /// Start polling for a cancel signal written by the watchOS simulator.
+    /// Called as soon as a fall event is forwarded to Flutter.
+    func startPollingForWatchCancel() {
+        watchCancelPollTask?.cancel()
+        #if targetEnvironment(simulator)
+        watchCancelPollTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                guard !Task.isCancelled else { return }
+                let path = "/tmp/com.fallguardian.cancelFromWatch"
+                guard FileManager.default.fileExists(atPath: path) else { continue }
+                try? FileManager.default.removeItem(atPath: path)
+                NSLog("[WCSession][Phone] watchCancel poll: flag file found → forwarding onAlertCancelled")
+                forwardToFlutter("onAlertCancelled", arguments: nil)
+                return
+            }
+        }
+        #endif
+    }
+
+    func stopPollingForWatchCancel() {
+        watchCancelPollTask?.cancel()
+        watchCancelPollTask = nil
+    }
+
     init(channel: FlutterMethodChannel) {
         self.channel = channel
         super.init()
@@ -20,6 +80,7 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
         guard WCSession.isSupported() else { return }
         WCSession.default.delegate = self
         WCSession.default.activate()
+        startPollingForFallEvent()
     }
 
     // MARK: - WCSessionDelegate
@@ -53,6 +114,7 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
             let timestamp = message["timestamp"] as? Int ??
                 Int(Date().timeIntervalSince1970 * 1000)
             forwardToFlutter("onFallDetected", arguments: ["timestamp": timestamp])
+            startPollingForWatchCancel()  // watch→phone IPC fallback for simulator
         case "alert_cancelled":
             forwardToFlutter("onAlertCancelled", arguments: nil)
         default:
@@ -81,6 +143,7 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
     /// Also marks the flag so watch polls get the right answer immediately.
     func sendCancelAlert() {
         alertCancelledFlag = true
+        stopPollingForWatchCancel()  // phone handled the cancel; stop watch poll
         // Simulator IPC: write a flag file that the watchOS sim process can poll.
         // Both sims are macOS processes sharing /tmp, so this is guaranteed to work
         // regardless of WCSession state (isReachable is often false in the sim).
@@ -109,9 +172,12 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
     /// immediately re-cancel a subsequent alert.
     func resetCancelContext() {
         alertCancelledFlag = false
+        stopPollingForWatchCancel()
         try? WCSession.default.updateApplicationContext(["alertCancelled": false])
         #if targetEnvironment(simulator)
         try? FileManager.default.removeItem(atPath: "/tmp/com.fallguardian.cancelAlert")
+        try? FileManager.default.removeItem(atPath: "/tmp/com.fallguardian.cancelFromWatch")
+        try? FileManager.default.removeItem(atPath: "/tmp/com.fallguardian.fallEvent")
         #endif
     }
 
