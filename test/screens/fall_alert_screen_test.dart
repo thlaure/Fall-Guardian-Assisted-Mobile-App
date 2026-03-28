@@ -38,26 +38,20 @@ void main() {
 
   group('FallAlertScreen', () {
     testWidgets('shows 30-second countdown on launch', (tester) async {
-      await tester.pumpWidget(_app(
-        const FallAlertScreen(fallTimestamp: 0),
-      ));
+      await tester.pumpWidget(_app(const FallAlertScreen(fallTimestamp: 0)));
       await tester.pump();
       expect(find.text('30'), findsOneWidget);
     });
 
     testWidgets('shows warning icon and cancel button', (tester) async {
-      await tester.pumpWidget(_app(
-        const FallAlertScreen(fallTimestamp: 0),
-      ));
+      await tester.pumpWidget(_app(const FallAlertScreen(fallTimestamp: 0)));
       await tester.pump();
       expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
 
     testWidgets('countdown decrements by 1 each second', (tester) async {
-      await tester.pumpWidget(_app(
-        const FallAlertScreen(fallTimestamp: 0),
-      ));
+      await tester.pumpWidget(_app(const FallAlertScreen(fallTimestamp: 0)));
       await tester.pump();
       expect(find.text('30'), findsOneWidget);
 
@@ -68,11 +62,10 @@ void main() {
       expect(find.text('28'), findsOneWidget);
     });
 
-    testWidgets('countdown reaches 0 and transitions to sending state',
-        (tester) async {
-      await tester.pumpWidget(_app(
-        const FallAlertScreen(fallTimestamp: 0),
-      ));
+    testWidgets('countdown reaches 0 and transitions to sending state', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_app(const FallAlertScreen(fallTimestamp: 0)));
       await tester.pump();
       expect(find.text('30'), findsOneWidget);
 
@@ -86,28 +79,31 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('cancel during countdown prevents sendAlert from running',
-        (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Builder(
-          builder: (context) => ElevatedButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const FallAlertScreen(fallTimestamp: 0),
+    testWidgets('cancel during countdown prevents sendAlert from running', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FallAlertScreen(fallTimestamp: 0),
+                ),
               ),
+              child: const Text('open'),
             ),
-            child: const Text('open'),
           ),
         ),
-      ));
+      );
       await tester.pump();
       await tester.pump();
       await tester.tap(find.text('open'));
@@ -126,26 +122,28 @@ void main() {
 
     testWidgets('tapping cancel pops the screen', (tester) async {
       // Push FallAlertScreen on top of a home screen so we can verify the pop.
-      await tester.pumpWidget(MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Builder(
-          builder: (context) => ElevatedButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const FallAlertScreen(fallTimestamp: 0),
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FallAlertScreen(fallTimestamp: 0),
+                ),
               ),
+              child: const Text('open'),
             ),
-            child: const Text('open'),
           ),
         ),
-      ));
+      );
 
       // Pump twice: once for the initial frame, once to load localizations.
       await tester.pump();

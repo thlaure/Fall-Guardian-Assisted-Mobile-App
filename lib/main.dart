@@ -91,12 +91,12 @@ class _FallGuardianAppState extends State<FallGuardianApp> {
       locale: null, // null = follow device locale automatically
       // ─────────────────────────────────────────────────────────────────────
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF533483)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFE5694A)),
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF533483),
+          seedColor: const Color(0xFFE5694A),
           brightness: Brightness.dark,
         ),
         useMaterial3: true,

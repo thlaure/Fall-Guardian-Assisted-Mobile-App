@@ -15,8 +15,10 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.appTitle,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          l10n.appTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -61,14 +63,16 @@ class HomeScreen extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: () =>
                       onSimulateFall!(DateTime.now().millisecondsSinceEpoch),
-                  icon:
-                      const Icon(Icons.bug_report, color: Colors.orangeAccent),
+                  icon: const Icon(
+                    Icons.bug_report,
+                    color: Color(0xFFE5694A),
+                  ),
                   label: const Text(
                     'Simulate Fall (debug)',
-                    style: TextStyle(color: Colors.orangeAccent),
+                    style: TextStyle(color: Color(0xFFE5694A)),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.orangeAccent),
+                    side: const BorderSide(color: Color(0xFFE5694A)),
                   ),
                 ),
               ),
@@ -98,7 +102,7 @@ class _StatusCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF0F3460), Color(0xFF533483)],
+          colors: [Color(0xFF001A18), Color(0xFF003F3C)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -117,10 +121,10 @@ class _StatusCard extends StatelessWidget {
             width: 72,
             height: 72,
             decoration: const BoxDecoration(
-              color: Color(0xFF23254A),
+              color: Color(0xFF003F3C),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.shield, color: Color(0xFF5DEBB8), size: 40),
+            child: const Icon(Icons.shield, color: Color(0xFFE5694A), size: 40),
           ),
           const SizedBox(height: 16),
           Text(
@@ -175,21 +179,28 @@ class _NavButton extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(label,
-                        style: TextStyle(
-                            color: cs.onSecondaryContainer,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600)),
-                    Text(subtitle,
-                        style: TextStyle(
-                            color:
-                                cs.onSecondaryContainer.withValues(alpha: 0.7),
-                            fontSize: 13)),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: cs.onSecondaryContainer,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: cs.onSecondaryContainer.withValues(alpha: 0.7),
+                        fontSize: 13,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right,
-                  color: cs.onSecondaryContainer.withValues(alpha: 0.6)),
+              Icon(
+                Icons.chevron_right,
+                color: cs.onSecondaryContainer.withValues(alpha: 0.6),
+              ),
             ],
           ),
         ),

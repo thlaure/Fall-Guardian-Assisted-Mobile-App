@@ -16,8 +16,11 @@ class FallAlertScreen extends StatefulWidget {
   final int fallTimestamp;
   final Stream<void>? cancelStream;
 
-  const FallAlertScreen(
-      {super.key, required this.fallTimestamp, this.cancelStream});
+  const FallAlertScreen({
+    super.key,
+    required this.fallTimestamp,
+    this.cancelStream,
+  });
 
   @override
   State<FallAlertScreen> createState() => _FallAlertScreenState();
@@ -50,8 +53,10 @@ class _FallAlertScreenState extends State<FallAlertScreen>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     )..repeat(reverse: true);
-    _pulseAnimation =
-        Tween<double>(begin: 0.9, end: 1.1).animate(_pulseController);
+    _pulseAnimation = Tween<double>(
+      begin: 0.9,
+      end: 1.1,
+    ).animate(_pulseController);
   }
 
   void _startCountdown() {
@@ -107,8 +112,10 @@ class _FallAlertScreenState extends State<FallAlertScreen>
     await NotificationService().cancelAll();
     if (!mounted) return;
 
-    setState(() => _statusMessage =
-        smsFailed ? l10n.smsFailed : l10n.alertSentCount(notified.length));
+    setState(
+      () => _statusMessage =
+          smsFailed ? l10n.smsFailed : l10n.alertSentCount(notified.length),
+    );
 
     await Future.delayed(Duration(seconds: smsFailed ? 5 : 2));
     if (mounted) Navigator.of(context).pop();
@@ -183,12 +190,17 @@ class _FallAlertScreenState extends State<FallAlertScreen>
                     ? Column(
                         children: [
                           const CircularProgressIndicator(
-                              color: Colors.redAccent),
+                            color: Colors.redAccent,
+                          ),
                           const SizedBox(height: 16),
-                          Text(_statusMessage,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                  color: Colors.white70, fontSize: 14)),
+                          Text(
+                            _statusMessage,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
                         ],
                       )
                     : Column(
@@ -205,7 +217,7 @@ class _FallAlertScreenState extends State<FallAlertScreen>
                                   backgroundColor: Colors.white12,
                                   color: _remaining <= 10
                                       ? Colors.redAccent
-                                      : Colors.orangeAccent,
+                                      : const Color(0xFFE5694A),
                                 ),
                               ),
                               Text(
@@ -224,13 +236,16 @@ class _FallAlertScreenState extends State<FallAlertScreen>
                             child: ElevatedButton.icon(
                               onPressed: _cancel,
                               icon: const Icon(Icons.check_circle, size: 28),
-                              label: Text(l10n.cancelAlert,
-                                  style: const TextStyle(fontSize: 18)),
+                              label: Text(
+                                l10n.cancelAlert,
+                                style: const TextStyle(fontSize: 18),
+                              ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16)),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                               ),
                             ),
                           ),

@@ -49,15 +49,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setDouble(_kTilt, _tiltThreshold);
     await prefs.setInt(_kFreeFallMs, _freeFallMinMs);
     // Push updated thresholds to connected watch(es) — fire-and-forget
-    unawaited(WatchCommunicationService.pushThresholds(
-      freeFall: _freeFallThreshold,
-      impact: _impactThreshold,
-      tilt: _tiltThreshold,
-      freeFallMs: _freeFallMinMs,
-    ));
+    unawaited(
+      WatchCommunicationService.pushThresholds(
+        freeFall: _freeFallThreshold,
+        impact: _impactThreshold,
+        tilt: _tiltThreshold,
+        freeFallMs: _freeFallMinMs,
+      ),
+    );
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.settingsSaved)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.settingsSaved)));
     }
   }
 
@@ -69,12 +72,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.settingsTitle),
-        actions: [
-          TextButton(
-            onPressed: _save,
-            child: Text(l10n.save),
-          ),
-        ],
+        actions: [TextButton(onPressed: _save, child: Text(l10n.save))],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -151,7 +149,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _sectionHeader(String title, ColorScheme cs) => Text(
         title,
         style: TextStyle(
-            color: cs.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
+          color: cs.onSurface,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
       );
 
   Widget _infoCard(String text, ColorScheme cs) => Container(
@@ -160,8 +161,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Text(text,
-            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
+        child: Text(
+          text,
+          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
+        ),
       );
 
   Widget _sliderTile({
@@ -187,17 +190,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Row(
             children: [
               Expanded(
-                child: Text(label,
-                    style: TextStyle(
-                        color: cs.onSurface, fontWeight: FontWeight.w600)),
-              ),
-              Text(displayVal,
+                child: Text(
+                  label,
                   style: TextStyle(
-                      color: cs.primary, fontWeight: FontWeight.bold)),
+                    color: cs.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                displayVal,
+                style: TextStyle(
+                  color: cs.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
-          Text(description,
-              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+          Text(
+            description,
+            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+          ),
           Slider(
             value: value,
             min: min,

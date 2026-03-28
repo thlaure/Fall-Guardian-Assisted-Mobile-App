@@ -48,12 +48,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
         content: Text(l10n.clearHistoryBody),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.cancel)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child:
-                  Text(l10n.clear, style: const TextStyle(color: Colors.red))),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.clear, style: const TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -85,19 +86,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.history,
-                          size: 72,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant
-                              .withValues(alpha: 0.4)),
+                      Icon(
+                        Icons.history,
+                        size: 72,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                      ),
                       const SizedBox(height: 16),
-                      Text(l10n.historyEmpty,
-                          style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                              fontSize: 18)),
+                      Text(
+                        l10n.historyEmpty,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 18,
+                        ),
+                      ),
                     ],
                   ),
                 )
@@ -124,22 +127,22 @@ class _EventTile extends StatelessWidget {
       FallEventStatus.alertSent => (
           Icons.send,
           Colors.redAccent,
-          l10n.statusAlertSent
+          l10n.statusAlertSent,
         ),
       FallEventStatus.alertFailed => (
           Icons.sms_failed,
           Colors.deepOrange,
-          l10n.statusAlertFailed
+          l10n.statusAlertFailed,
         ),
       FallEventStatus.cancelled => (
           Icons.cancel,
           Colors.green,
-          l10n.statusCancelled
+          l10n.statusCancelled,
         ),
       FallEventStatus.timedOutNoSms => (
           Icons.timer_off,
           Colors.orangeAccent,
-          l10n.statusTimedOut
+          l10n.statusTimedOut,
         ),
     };
 
@@ -155,24 +158,31 @@ class _EventTile extends StatelessWidget {
               children: [
                 Icon(icon, color: color, size: 20),
                 const SizedBox(width: 8),
-                Text(label,
-                    style:
-                        TextStyle(color: color, fontWeight: FontWeight.bold)),
+                Text(
+                  label,
+                  style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                ),
                 const Spacer(),
-                Text(fmt.format(event.timestamp.toLocal()),
-                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+                Text(
+                  fmt.format(event.timestamp.toLocal()),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                ),
               ],
             ),
             if (event.notifiedContacts.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text(l10n.notifiedLabel(event.notifiedContacts.join(', ')),
-                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
+              Text(
+                l10n.notifiedLabel(event.notifiedContacts.join(', ')),
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
+              ),
             ],
             if (event.latitude != null && event.longitude != null) ...[
               const SizedBox(height: 4),
               Text(
-                l10n.locationLabel('${event.latitude!.toStringAsFixed(5)}, '
-                    '${event.longitude!.toStringAsFixed(5)}'),
+                l10n.locationLabel(
+                  '${event.latitude!.toStringAsFixed(5)}, '
+                  '${event.longitude!.toStringAsFixed(5)}',
+                ),
                 style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
               ),
             ],

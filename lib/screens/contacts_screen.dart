@@ -71,12 +71,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
         content: Text(l10n.contactsRemoveTitle(contact.name)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.cancel)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child:
-                  Text(l10n.remove, style: const TextStyle(color: Colors.red))),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.remove, style: const TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -91,9 +92,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.contactsScreenTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.contactsScreenTitle)),
       floatingActionButton: FloatingActionButton(
         onPressed: _addContact,
         child: const Icon(Icons.add),
@@ -127,15 +126,22 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.people_outline,
-              size: 72, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+          Icon(
+            Icons.people_outline,
+            size: 72,
+            color: cs.onSurfaceVariant.withValues(alpha: 0.4),
+          ),
           const SizedBox(height: 16),
-          Text(l10n.contactsEmpty,
-              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 18)),
+          Text(
+            l10n.contactsEmpty,
+            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 18),
+          ),
           const SizedBox(height: 8),
-          Text(l10n.contactsEmptyHint,
-              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
-              textAlign: TextAlign.center),
+          Text(
+            l10n.contactsEmptyHint,
+            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: onAdd,
@@ -168,21 +174,27 @@ class _ContactTile extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: cs.primaryContainer,
-          child: Text(contact.name[0].toUpperCase(),
-              style: TextStyle(color: cs.onPrimaryContainer)),
+          child: Text(
+            contact.name[0].toUpperCase(),
+            style: TextStyle(color: cs.onPrimaryContainer),
+          ),
         ),
         title: Text(contact.name),
-        subtitle:
-            Text(contact.phone, style: TextStyle(color: cs.onSurfaceVariant)),
+        subtitle: Text(
+          contact.phone,
+          style: TextStyle(color: cs.onSurfaceVariant),
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-                icon: Icon(Icons.edit, color: cs.onSurfaceVariant),
-                onPressed: onEdit),
+              icon: Icon(Icons.edit, color: cs.onSurfaceVariant),
+              onPressed: onEdit,
+            ),
             IconButton(
-                icon: const Icon(Icons.delete, color: Colors.redAccent),
-                onPressed: onDelete),
+              icon: const Icon(Icons.delete, color: Colors.redAccent),
+              onPressed: onDelete,
+            ),
           ],
         ),
       ),
@@ -232,8 +244,9 @@ class _ContactDialogState extends State<_ContactDialog> {
             TextFormField(
               controller: _name,
               decoration: InputDecoration(
-                  labelText: l10n.contactNameLabel,
-                  prefixIcon: const Icon(Icons.person)),
+                labelText: l10n.contactNameLabel,
+                prefixIcon: const Icon(Icons.person),
+              ),
               inputFormatters: [LengthLimitingTextInputFormatter(50)],
               validator: (v) =>
                   v == null || v.trim().isEmpty ? l10n.required_ : null,
@@ -242,8 +255,9 @@ class _ContactDialogState extends State<_ContactDialog> {
             TextFormField(
               controller: _phone,
               decoration: InputDecoration(
-                  labelText: l10n.contactPhoneLabel,
-                  prefixIcon: const Icon(Icons.phone)),
+                labelText: l10n.contactPhoneLabel,
+                prefixIcon: const Icon(Icons.phone),
+              ),
               keyboardType: TextInputType.phone,
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return l10n.required_;
@@ -257,7 +271,9 @@ class _ContactDialogState extends State<_ContactDialog> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
