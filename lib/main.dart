@@ -23,6 +23,7 @@ import 'screens/fall_alert_screen.dart';
 // The service that talks to the native watch layer (Wear OS / watchOS).
 import 'services/watch_communication_service.dart';
 import 'services/alert_coordinator.dart';
+import 'services/location_service.dart';
 import 'services/notification_service.dart';
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
@@ -73,6 +74,7 @@ class _FallGuardianAppState extends State<FallGuardianApp> {
   // time, including while the user is on a different screen.
   final _watchService = WatchCommunicationService();
   final _alertCoordinator = AlertCoordinator.live();
+  final _locationService = LocationService();
 
   // GlobalKey gives us a stable reference to the Navigator (the stack of
   // screens). We need it in _onFallDetected because that callback fires from
@@ -90,6 +92,12 @@ class _FallGuardianAppState extends State<FallGuardianApp> {
     // native platform layer (Kotlin/Swift code on the watch side).
     _watchService.setFallDetectedCallback(_onFallDetected);
     _watchService.setCancelAlertCallback(_onAlertCancelled);
+
+    // Ask for location permission early so a real alert is not the first time
+    // the user sees the GPS authorization sheet.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_locationService.requestPermissionIfNeeded());
+    });
   }
 
   // Called by WatchCommunicationService when the watch (or native layer)

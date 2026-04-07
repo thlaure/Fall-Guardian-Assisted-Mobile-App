@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fall_guardian/services/location_service.dart';
+import 'package:geolocator/geolocator.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -97,6 +98,44 @@ void main() {
         isNull,
         reason: 'Should return null when getCurrentPosition throws',
       );
+    });
+
+    test('requestPermissionIfNeeded_requestsWhenDenied', () async {
+      var requestCalled = false;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(geolocatorChannel, (call) async {
+        if (call.method == 'checkPermission') return 0;
+        if (call.method == 'requestPermission') {
+          requestCalled = true;
+          return 2;
+        }
+        return null;
+      });
+
+      final service = LocationService();
+      final permission = await service.requestPermissionIfNeeded();
+
+      expect(requestCalled, isTrue);
+      expect(permission, isNot(LocationPermission.denied));
+    });
+
+    test('requestPermissionIfNeeded_doesNotRequestWhenAlreadyGranted',
+        () async {
+      var requestCalled = false;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(geolocatorChannel, (call) async {
+        if (call.method == 'checkPermission') return 2;
+        if (call.method == 'requestPermission') {
+          requestCalled = true;
+        }
+        return null;
+      });
+
+      final service = LocationService();
+      final permission = await service.requestPermissionIfNeeded();
+
+      expect(requestCalled, isFalse);
+      expect(permission, LocationPermission.whileInUse);
     });
   });
 }
