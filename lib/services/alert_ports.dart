@@ -22,11 +22,21 @@ abstract class AlertNotificationGateway {
   Future<void> cancelAll();
 }
 
-abstract class AlertSmsGateway {
-  Future<List<String>> sendFallAlert({
+abstract class AlertBackendGateway {
+  Future<void> ensureReady();
+
+  Future<void> syncContacts(List<Contact> contacts);
+
+  Future<List<String>> submitFallAlert({
+    required String clientAlertId,
+    required int fallTimestamp,
+    required String locale,
+    required double? latitude,
+    required double? longitude,
     required List<Contact> contacts,
-    required String message,
   });
+
+  Future<void> cancelFallAlert({required String clientAlertId});
 }
 
 abstract class WatchCommandGateway {
@@ -35,6 +45,8 @@ abstract class WatchCommandGateway {
 
 abstract class AlertLocaleResolver {
   AppLocalizations resolve();
+
+  String languageCode();
 }
 
 abstract class Clock {

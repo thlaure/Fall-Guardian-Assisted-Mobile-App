@@ -29,6 +29,11 @@ class DeviceLocaleResolver implements AlertLocaleResolver {
     );
     return AppLocalizations.forLocale(supportedLocale);
   }
+
+  @override
+  String languageCode() {
+    return WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+  }
 }
 
 class MethodChannelWatchGateway implements WatchCommandGateway {

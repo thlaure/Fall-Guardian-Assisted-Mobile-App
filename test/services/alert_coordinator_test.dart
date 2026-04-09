@@ -40,21 +40,45 @@ class _FakeNotificationService implements AlertNotificationGateway {
   }
 }
 
-class _FakeSmsService implements AlertSmsGateway {
-  _FakeSmsService(this.result);
+class _FakeBackendGateway implements AlertBackendGateway {
+  _FakeBackendGateway(this.result);
 
   final List<String> result;
-  String? lastMessage;
+  String? lastClientAlertId;
+  String? lastLocale;
   List<Contact>? lastContacts;
+  int? lastTimestamp;
+  double? lastLatitude;
+  double? lastLongitude;
+  int cancelCount = 0;
 
   @override
-  Future<List<String>> sendFallAlert({
+  Future<void> ensureReady() async {}
+
+  @override
+  Future<void> syncContacts(List<Contact> contacts) async {}
+
+  @override
+  Future<List<String>> submitFallAlert({
+    required String clientAlertId,
+    required int fallTimestamp,
+    required String locale,
+    required double? latitude,
+    required double? longitude,
     required List<Contact> contacts,
-    required String message,
   }) async {
+    lastClientAlertId = clientAlertId;
+    lastLocale = locale;
+    lastTimestamp = fallTimestamp;
+    lastLatitude = latitude;
+    lastLongitude = longitude;
     lastContacts = contacts;
-    lastMessage = message;
     return result;
+  }
+
+  @override
+  Future<void> cancelFallAlert({required String clientAlertId}) async {
+    cancelCount++;
   }
 }
 
@@ -84,7 +108,7 @@ AlertCoordinator _coordinator({
   FallEventRecorder? eventRecorder,
   AlertLocationProvider? locationProvider,
   AlertNotificationGateway? notificationGateway,
-  AlertSmsGateway? smsGateway,
+  AlertBackendGateway? backendGateway,
   WatchCommandGateway? watchGateway,
   AlertLocaleResolver? localeResolver,
   Clock? clock,
@@ -95,7 +119,7 @@ AlertCoordinator _coordinator({
     eventRecorder: eventRecorder ?? _FakeFallEventsRepository(),
     locationProvider: locationProvider ?? _FakeLocationService(),
     notificationGateway: notificationGateway ?? _FakeNotificationService(),
-    smsGateway: smsGateway ?? _FakeSmsService(const []),
+    backendGateway: backendGateway ?? _FakeBackendGateway(const []),
     watchGateway: watchGateway ?? _FakeWatchGateway(),
     localeResolver: localeResolver ?? const DeviceLocaleResolver(),
     clock: clock ?? _FakeClock(),
@@ -148,9 +172,11 @@ void main() {
 
     final repo = _FakeFallEventsRepository();
     final notifications = _FakeNotificationService();
+    final backend = _FakeBackendGateway(const []);
     final coordinator = _coordinator(
       eventRecorder: repo,
       notificationGateway: notifications,
+      backendGateway: backend,
     );
 
     await coordinator.startAlert(DateTime.now().millisecondsSinceEpoch);
@@ -163,6 +189,7 @@ void main() {
     expect(repo.savedEvents.single.status, FallEventStatus.cancelled);
     expect(coordinator.currentState, isNull);
     expect(notifications.cancelCount, 1);
+    expect(backend.cancelCount, 0);
 
     coordinator.dispose();
   });
@@ -189,10 +216,12 @@ void main() {
     final repo = _FakeFallEventsRepository();
     final notifications = _FakeNotificationService();
     final watchGateway = _FakeWatchGateway();
+    final backend = _FakeBackendGateway(const []);
     final coordinator = _coordinator(
       eventRecorder: repo,
       notificationGateway: notifications,
       watchGateway: watchGateway,
+      backendGateway: backend,
     );
 
     await coordinator.startAlert(DateTime.now().millisecondsSinceEpoch);
@@ -202,6 +231,7 @@ void main() {
     expect(repo.savedEvents.single.status, FallEventStatus.cancelled);
     expect(notifications.cancelCount, 1);
     expect(coordinator.currentState, isNull);
+    expect(backend.cancelCount, 0);
 
     coordinator.dispose();
   });
@@ -239,7 +269,7 @@ void main() {
   test('timeout with contacts and successful sms records alertSent', () async {
     final repo = _FakeFallEventsRepository();
     final notifications = _FakeNotificationService();
-    final sms = _FakeSmsService(const ['Alice', 'Bob']);
+    final backend = _FakeBackendGateway(const ['Alice', 'Bob']);
     final states = <AlertUiState>[];
     final coordinator = _coordinator(
       contactsStore: _FakeContactsRepository(const [
@@ -248,7 +278,7 @@ void main() {
       ]),
       eventRecorder: repo,
       notificationGateway: notifications,
-      smsGateway: sms,
+      backendGateway: backend,
     );
     final sub = coordinator.stateStream.listen(states.add);
 
@@ -261,8 +291,9 @@ void main() {
     expect(repo.savedEvents.single.status, FallEventStatus.alertSent);
     expect(repo.savedEvents.single.notifiedContacts, ['Alice', 'Bob']);
     expect(notifications.cancelCount, 1);
-    expect(sms.lastContacts, hasLength(2));
-    expect(sms.lastMessage, isNot(contains('Alice')));
+    expect(backend.lastContacts, hasLength(2));
+    expect(backend.lastClientAlertId, isNotNull);
+    expect(backend.lastLocale, isNotEmpty);
     expect(states.map((state) => state.phase), [
       AlertPhase.countdown,
       AlertPhase.gettingLocation,
@@ -284,7 +315,7 @@ void main() {
       ]),
       eventRecorder: repo,
       notificationGateway: notifications,
-      smsGateway: _FakeSmsService(const []),
+      backendGateway: _FakeBackendGateway(const []),
     );
     final sub = coordinator.stateStream.listen(states.add);
 

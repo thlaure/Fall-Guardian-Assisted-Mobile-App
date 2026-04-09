@@ -1,15 +1,26 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart';
 import '../models/contact.dart';
 import '../services/alert_ports.dart';
+import '../services/backend_api_service.dart';
 import '../services/secure_store.dart';
 import 'shared_preferences_migration.dart';
 
+enum ContactsSyncState { unknown, synced, failed }
+
 class ContactsRepository implements EmergencyContactsStore {
-  ContactsRepository({KeyValueStore? store})
-      : _store = store ?? SecureKeyValueStore();
+  ContactsRepository({
+    KeyValueStore? store,
+    AlertBackendGateway? backendGateway,
+  })  : _store = store ?? SecureKeyValueStore(),
+        _backendGateway = backendGateway ?? BackendApiService();
 
   static const _key = 'contacts';
   final KeyValueStore _store;
+  final AlertBackendGateway _backendGateway;
+  final ValueNotifier<ContactsSyncState> syncState =
+      ValueNotifier<ContactsSyncState>(ContactsSyncState.unknown);
 
   @override
   Future<List<Contact>> getAll() async {
@@ -25,33 +36,36 @@ class ContactsRepository implements EmergencyContactsStore {
     return contacts;
   }
 
-  Future<void> save(List<Contact> contacts) async {
+  Future<bool> save(List<Contact> contacts) async {
     await _store.write(
       _key,
       jsonEncode(contacts.map((c) => jsonEncode(c.toJson())).toList()),
     );
     await deleteLegacyKey(_key);
+    return _syncBackend(contacts);
   }
 
-  Future<void> add(Contact contact) async {
+  Future<bool> add(Contact contact) async {
     final contacts = await getAll();
     contacts.add(contact);
-    await save(contacts);
+    return save(contacts);
   }
 
-  Future<void> remove(String id) async {
+  Future<bool> remove(String id) async {
     final contacts = await getAll();
     contacts.removeWhere((c) => c.id == id);
-    await save(contacts);
+    return save(contacts);
   }
 
-  Future<void> update(Contact updated) async {
+  Future<bool> update(Contact updated) async {
     final contacts = await getAll();
     final idx = contacts.indexWhere((c) => c.id == updated.id);
     if (idx != -1) {
       contacts[idx] = updated;
-      await save(contacts);
+      return save(contacts);
     }
+
+    return syncState.value == ContactsSyncState.synced;
   }
 
   Future<List<String>> _readRaw() async {
@@ -71,5 +85,23 @@ class ContactsRepository implements EmergencyContactsStore {
       await deleteLegacyKey(_key);
     }
     return legacyRaw;
+  }
+
+  Future<bool> _syncBackend(List<Contact> contacts) async {
+    try {
+      await _backendGateway.ensureReady();
+      await _backendGateway.syncContacts(contacts);
+      syncState.value = ContactsSyncState.synced;
+      return true;
+    } catch (error, stackTrace) {
+      developer.log(
+        'Contact sync failed; keeping local copy',
+        name: 'ContactsRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      syncState.value = ContactsSyncState.failed;
+      return false;
+    }
   }
 }

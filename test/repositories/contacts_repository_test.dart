@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fall_guardian/models/contact.dart';
 import 'package:fall_guardian/repositories/contacts_repository.dart';
+import 'package:fall_guardian/services/alert_ports.dart';
 import 'package:fall_guardian/services/secure_store.dart';
 
 class _FakeStore implements KeyValueStore {
@@ -22,14 +23,52 @@ class _FakeStore implements KeyValueStore {
   }
 }
 
+class _FakeBackendGateway implements AlertBackendGateway {
+  _FakeBackendGateway({this.shouldFail = false});
+
+  final bool shouldFail;
+  List<Contact>? syncedContacts;
+  int ensureReadyCalls = 0;
+
+  @override
+  Future<void> ensureReady() async {
+    ensureReadyCalls++;
+  }
+
+  @override
+  Future<void> syncContacts(List<Contact> contacts) async {
+    if (shouldFail) {
+      throw Exception('backend unavailable');
+    }
+    syncedContacts = List<Contact>.from(contacts);
+  }
+
+  @override
+  Future<void> cancelFallAlert({required String clientAlertId}) async {}
+
+  @override
+  Future<List<String>> submitFallAlert({
+    required String clientAlertId,
+    required int fallTimestamp,
+    required String locale,
+    required double? latitude,
+    required double? longitude,
+    required List<Contact> contacts,
+  }) async {
+    return const [];
+  }
+}
+
 void main() {
   late ContactsRepository repo;
   late _FakeStore store;
+  late _FakeBackendGateway backend;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     store = _FakeStore();
-    repo = ContactsRepository(store: store);
+    backend = _FakeBackendGateway();
+    repo = ContactsRepository(store: store, backendGateway: backend);
   });
 
   group('ContactsRepository', () {
@@ -43,6 +82,8 @@ void main() {
       final all = await repo.getAll();
       expect(all.length, 1);
       expect(all.first.name, 'Alice');
+      expect(backend.ensureReadyCalls, 1);
+      expect(backend.syncedContacts?.single.name, 'Alice');
     });
 
     test('add multiple contacts', () async {
@@ -99,7 +140,7 @@ void main() {
       SharedPreferences.setMockInitialValues({
         'contacts': ['not valid json!!!', validJson],
       });
-      repo = ContactsRepository(store: store);
+      repo = ContactsRepository(store: store, backendGateway: backend);
 
       final all = await repo.getAll();
       expect(all.length, 1, reason: 'Corrupted entry must be silently skipped');
@@ -113,7 +154,7 @@ void main() {
       SharedPreferences.setMockInitialValues({
         'contacts': [validJson],
       });
-      repo = ContactsRepository(store: store);
+      repo = ContactsRepository(store: store, backendGateway: backend);
 
       final all = await repo.getAll();
 
@@ -121,6 +162,19 @@ void main() {
       expect(store.data['contacts'], contains('Alice'));
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getStringList('contacts'), isNull);
+    });
+
+    test('add keeps local contact when backend sync fails', () async {
+      backend = _FakeBackendGateway(shouldFail: true);
+      repo = ContactsRepository(store: store, backendGateway: backend);
+
+      final synced = await repo.add(
+        const Contact(id: '1', name: 'Alice', phone: '+33600000000'),
+      );
+
+      expect(synced, isFalse);
+      expect((await repo.getAll()).single.name, 'Alice');
+      expect(repo.syncState.value, ContactsSyncState.failed);
     });
   });
 }
