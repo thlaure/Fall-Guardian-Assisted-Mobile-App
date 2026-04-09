@@ -32,6 +32,9 @@ dependencies:
   # Date formatting
   intl: ^0.20.2
 
+  # Backend API calls
+  http: ^1.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

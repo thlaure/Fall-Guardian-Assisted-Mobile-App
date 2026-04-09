@@ -46,6 +46,9 @@ abstract class AppLocalizations {
   String get editContact;
   String get contactNameLabel;
   String get contactPhoneLabel;
+  String get contactsSyncFailedBanner;
+  String get contactsSyncFailedHint;
+  String get contactsSavedLocallyOnly;
 
   // ── Fall Alert ────────────────────────────────────────────────────────────
   String get fallAlertTitle;

@@ -23,7 +23,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Our Contact model — a plain Dart class with `name` and `phone` fields.
 import '../models/contact.dart';
-import 'alert_ports.dart';
 
 // ─── Why a service class? ────────────────────────────────────────────────────
 // Isolating SMS logic in its own class means:
@@ -37,7 +36,7 @@ import 'alert_ports.dart';
 ///
 /// Includes a 60-second rate limit to prevent accidental repeated sends
 /// (e.g. if the watch fires multiple fall events in quick succession).
-class SmsService implements AlertSmsGateway {
+class SmsService {
   // Reuses the existing watch MethodChannel — no need for a separate channel.
   static const _smsChannel = MethodChannel('fall_guardian/watch');
 
@@ -84,7 +83,6 @@ class SmsService implements AlertSmsGateway {
   ///   4. Extract phone numbers from the Contact objects.
   ///   5. Call the flutter_sms plugin to send the message.
   ///   6. On success, persist the new timestamp and return the notified names.
-  @override
   Future<List<String>> sendFallAlert({
     required List<Contact> contacts,
     required String message,

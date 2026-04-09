@@ -6,9 +6,9 @@ import '../models/contact.dart';
 import '../models/fall_event.dart';
 import 'alert_ports.dart';
 import 'alert_runtime.dart';
+import 'backend_api_service.dart';
 import 'location_service.dart';
 import 'notification_service.dart';
-import 'sms_service.dart';
 import '../repositories/contacts_repository.dart';
 import '../repositories/fall_events_repository.dart';
 
@@ -50,7 +50,7 @@ class AlertCoordinator {
     required FallEventRecorder eventRecorder,
     required AlertLocationProvider locationProvider,
     required AlertNotificationGateway notificationGateway,
-    required AlertSmsGateway smsGateway,
+    required AlertBackendGateway backendGateway,
     required WatchCommandGateway watchGateway,
     required AlertLocaleResolver localeResolver,
     required Clock clock,
@@ -59,7 +59,7 @@ class AlertCoordinator {
         _eventRecorder = eventRecorder,
         _locationProvider = locationProvider,
         _notificationGateway = notificationGateway,
-        _smsGateway = smsGateway,
+        _backendGateway = backendGateway,
         _watchGateway = watchGateway,
         _localeResolver = localeResolver,
         _clock = clock,
@@ -71,7 +71,7 @@ class AlertCoordinator {
       eventRecorder: FallEventsRepository(),
       locationProvider: LocationService(),
       notificationGateway: NotificationService(),
-      smsGateway: SmsService(),
+      backendGateway: BackendApiService(),
       watchGateway: const MethodChannelWatchGateway(),
       localeResolver: const DeviceLocaleResolver(),
       clock: SystemClock(),
@@ -85,7 +85,7 @@ class AlertCoordinator {
   final FallEventRecorder _eventRecorder;
   final AlertLocationProvider _locationProvider;
   final AlertNotificationGateway _notificationGateway;
-  final AlertSmsGateway _smsGateway;
+  final AlertBackendGateway _backendGateway;
   final WatchCommandGateway _watchGateway;
   final AlertLocaleResolver _localeResolver;
   final Clock _clock;
@@ -98,6 +98,8 @@ class AlertCoordinator {
   Timer? _dismissTimer;
   AlertUiState? _currentState;
   int? _activeTimestamp;
+  String? _activeClientAlertId;
+  bool _submittedToBackend = false;
 
   Stream<AlertUiState> get stateStream => _stateController.stream;
   Stream<void> get dismissStream => _dismissController.stream;
@@ -108,6 +110,8 @@ class AlertCoordinator {
 
     _cancelTimers();
     _activeTimestamp = timestamp;
+    _activeClientAlertId = _idGenerator.newId();
+    _submittedToBackend = false;
     _transition(timestamp, AlertPhase.countdown);
 
     final elapsedMs = _clock.now().millisecondsSinceEpoch - timestamp;
@@ -138,6 +142,11 @@ class AlertCoordinator {
       unawaited(_watchGateway.sendCancelAlert());
     }
 
+    final clientAlertId = _activeClientAlertId;
+    if (_submittedToBackend && clientAlertId != null) {
+      unawaited(_backendGateway.cancelFallAlert(clientAlertId: clientAlertId));
+    }
+
     _transition(timestamp, AlertPhase.cancelled);
 
     final event = FallEvent(
@@ -148,6 +157,8 @@ class AlertCoordinator {
     await _eventRecorder.add(event);
     await _notificationGateway.cancelAll();
     _activeTimestamp = null;
+    _activeClientAlertId = null;
+    _submittedToBackend = false;
     _currentState = null;
     _dismissController.add(null);
   }
@@ -159,6 +170,7 @@ class AlertCoordinator {
     }
 
     final l10n = _localeResolver.resolve();
+    final clientAlertId = _activeClientAlertId;
     _transition(
       timestamp,
       AlertPhase.gettingLocation,
@@ -174,21 +186,17 @@ class AlertCoordinator {
       statusMessage: l10n.sendingSms,
     );
 
-    final locationLine = position != null
-        ? l10n.smsLocationLine(position.latitude, position.longitude)
-        : l10n.smsLocationUnavailable;
-    final message = l10n.smsMessage(locationLine);
-
     final contacts = await _contactsStore.getAll();
     if (!_isCurrentAlert(timestamp)) return;
 
     final outcome = contacts.isEmpty
         ? _noContactsOutcome(timestamp, position, l10n.smsFailed)
-        : await _smsEscalationOutcome(
+        : await _backendEscalationOutcome(
+            clientAlertId: clientAlertId,
             timestamp: timestamp,
             position: position,
             contacts: contacts,
-            message: message,
+            locale: _localeResolver.languageCode(),
             smsFailedMessage: l10n.smsFailed,
             alertSentMessageBuilder: l10n.alertSentCount,
           );
@@ -203,24 +211,41 @@ class AlertCoordinator {
     _dismissTimer = Timer(outcome.dismissDelay, () {
       if (!_isCurrentAlert(timestamp)) return;
       _activeTimestamp = null;
+      _activeClientAlertId = null;
+      _submittedToBackend = false;
       _currentState = null;
       _dismissController.add(null);
     });
   }
 
-  Future<_AlertOutcome?> _smsEscalationOutcome({
+  Future<_AlertOutcome?> _backendEscalationOutcome({
+    required String? clientAlertId,
     required int timestamp,
     required Position? position,
     required List<Contact> contacts,
-    required String message,
+    required String locale,
     required String smsFailedMessage,
     required String Function(int notifiedCount) alertSentMessageBuilder,
   }) async {
-    final notified = await _smsGateway.sendFallAlert(
-      contacts: contacts,
-      message: message,
-    );
+    if (clientAlertId == null) {
+      return null;
+    }
+
+    List<String> notified;
+    try {
+      notified = await _backendGateway.submitFallAlert(
+        clientAlertId: clientAlertId,
+        fallTimestamp: timestamp,
+        locale: locale,
+        latitude: position?.latitude,
+        longitude: position?.longitude,
+        contacts: contacts,
+      );
+    } catch (_) {
+      notified = const [];
+    }
     if (!_isCurrentAlert(timestamp)) return null;
+    _submittedToBackend = notified.isNotEmpty;
 
     return _smsOutcome(
       timestamp: timestamp,

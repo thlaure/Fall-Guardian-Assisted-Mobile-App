@@ -19,10 +19,12 @@ import 'l10n/app_localizations.dart';
 // The two main screens of the phone app.
 import 'screens/home_screen.dart';
 import 'screens/fall_alert_screen.dart';
+import 'repositories/contacts_repository.dart';
 
 // The service that talks to the native watch layer (Wear OS / watchOS).
 import 'services/watch_communication_service.dart';
 import 'services/alert_coordinator.dart';
+import 'services/backend_api_service.dart';
 import 'services/location_service.dart';
 import 'services/notification_service.dart';
 
@@ -75,6 +77,8 @@ class _FallGuardianAppState extends State<FallGuardianApp> {
   final _watchService = WatchCommunicationService();
   final _alertCoordinator = AlertCoordinator.live();
   final _locationService = LocationService();
+  final _backendApi = BackendApiService();
+  final _contactsRepository = ContactsRepository();
 
   // GlobalKey gives us a stable reference to the Navigator (the stack of
   // screens). We need it in _onFallDetected because that callback fires from
@@ -97,7 +101,19 @@ class _FallGuardianAppState extends State<FallGuardianApp> {
     // the user sees the GPS authorization sheet.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_locationService.requestPermissionIfNeeded());
+      unawaited(_bootstrapBackend());
     });
+  }
+
+  Future<void> _bootstrapBackend() async {
+    try {
+      await _backendApi.ensureReady();
+      final contacts = await _contactsRepository.getAll();
+      await _backendApi.syncContacts(contacts);
+    } catch (_) {
+      // Best effort only: the app must still function locally if the backend is
+      // unavailable, and alert submission will surface the failure later.
+    }
   }
 
   // Called by WatchCommunicationService when the watch (or native layer)

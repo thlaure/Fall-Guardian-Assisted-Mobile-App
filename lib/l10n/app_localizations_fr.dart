@@ -56,6 +56,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get contactNameLabel => 'Nom';
   @override
   String get contactPhoneLabel => 'Numéro de téléphone';
+  @override
+  String get contactsSyncFailedBanner => 'Échec de la synchronisation backend';
+  @override
+  String get contactsSyncFailedHint =>
+      'Ce contact est enregistré seulement sur cet appareil. Vérifiez que le backend fonctionne et est joignable.';
+  @override
+  String get contactsSavedLocallyOnly =>
+      'Enregistré seulement sur cet appareil. Échec de la synchronisation backend.';
 
   // ── Fall Alert ────────────────────────────────────────────────────────────
   @override

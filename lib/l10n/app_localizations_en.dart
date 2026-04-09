@@ -56,6 +56,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contactNameLabel => 'Name';
   @override
   String get contactPhoneLabel => 'Phone Number';
+  @override
+  String get contactsSyncFailedBanner => 'Backend sync failed';
+  @override
+  String get contactsSyncFailedHint =>
+      'This contact is saved on this device only. Check that the backend is running and reachable.';
+  @override
+  String get contactsSavedLocallyOnly =>
+      'Saved on this device only. Backend sync failed.';
 
   // ── Fall Alert ────────────────────────────────────────────────────────────
   @override

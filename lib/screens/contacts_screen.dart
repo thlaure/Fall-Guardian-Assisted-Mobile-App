@@ -16,11 +16,26 @@ class _ContactsScreenState extends State<ContactsScreen> {
   final _repo = ContactsRepository();
   List<Contact> _contacts = [];
   bool _loading = true;
+  ContactsSyncState _syncState = ContactsSyncState.unknown;
 
   @override
   void initState() {
     super.initState();
+    _repo.syncState.addListener(_onSyncStateChanged);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _repo.syncState.removeListener(_onSyncStateChanged);
+    super.dispose();
+  }
+
+  void _onSyncStateChanged() {
+    if (!mounted) return;
+    setState(() {
+      _syncState = _repo.syncState.value;
+    });
   }
 
   Future<void> _load() async {
@@ -41,24 +56,28 @@ class _ContactsScreenState extends State<ContactsScreen> {
   }
 
   Future<void> _addContact() async {
+    final l10n = AppLocalizations.of(context);
     final result = await showDialog<Contact>(
       context: context,
       builder: (_) => const _ContactDialog(),
     );
     if (result != null) {
-      await _repo.add(result);
+      final synced = await _repo.add(result);
       await _load();
+      _showSyncFeedback(synced, l10n);
     }
   }
 
   Future<void> _editContact(Contact contact) async {
+    final l10n = AppLocalizations.of(context);
     final result = await showDialog<Contact>(
       context: context,
       builder: (_) => _ContactDialog(existing: contact),
     );
     if (result != null) {
-      await _repo.update(result);
+      final synced = await _repo.update(result);
       await _load();
+      _showSyncFeedback(synced, l10n);
     }
   }
 
@@ -82,9 +101,18 @@ class _ContactsScreenState extends State<ContactsScreen> {
       ),
     );
     if (confirmed == true) {
-      await _repo.remove(contact.id);
+      final synced = await _repo.remove(contact.id);
       await _load();
+      _showSyncFeedback(synced, l10n);
     }
+  }
+
+  void _showSyncFeedback(bool synced, AppLocalizations l10n) {
+    if (synced || !mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.contactsSavedLocallyOnly)),
+    );
   }
 
   @override
@@ -101,15 +129,69 @@ class _ContactsScreenState extends State<ContactsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _contacts.isEmpty
               ? _EmptyState(l10n: l10n, onAdd: _addContact)
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _contacts.length,
-                  itemBuilder: (_, i) => _ContactTile(
-                    contact: _contacts[i],
-                    onEdit: () => _editContact(_contacts[i]),
-                    onDelete: () => _deleteContact(_contacts[i]),
+              : Column(
+                  children: [
+                    if (_syncState == ContactsSyncState.failed)
+                      _SyncWarningBanner(l10n: l10n),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _contacts.length,
+                        itemBuilder: (_, i) => _ContactTile(
+                          contact: _contacts[i],
+                          onEdit: () => _editContact(_contacts[i]),
+                          onDelete: () => _deleteContact(_contacts[i]),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+    );
+  }
+}
+
+class _SyncWarningBanner extends StatelessWidget {
+  const _SyncWarningBanner({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.errorContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.cloud_off, color: colors.onErrorContainer),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.contactsSyncFailedBanner,
+                  style: TextStyle(
+                    color: colors.onErrorContainer,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.contactsSyncFailedHint,
+                  style: TextStyle(color: colors.onErrorContainer),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
