@@ -51,6 +51,7 @@ class _FakeBackendGateway implements AlertBackendGateway {
   double? lastLatitude;
   double? lastLongitude;
   int cancelCount = 0;
+  int callCount = 0;
 
   @override
   Future<void> ensureReady() async {}
@@ -67,6 +68,7 @@ class _FakeBackendGateway implements AlertBackendGateway {
     required double? longitude,
     required List<Contact> contacts,
   }) async {
+    callCount++;
     lastClientAlertId = clientAlertId;
     lastLocale = locale;
     lastTimestamp = fallTimestamp;
@@ -236,13 +238,21 @@ void main() {
     coordinator.dispose();
   });
 
-  test('timeout without contacts records timedOutNoSms', () async {
+  test(
+      'timeout without contacts still submits to backend and records alertFailed',
+      () async {
+    // Even with no emergency contacts the backend is always called so that
+    // the fall event is persisted server-side for auditing. The backend
+    // returns an empty notified-contacts list, which the coordinator
+    // maps to alertFailed (no one was reached, but the event was recorded).
     final repo = _FakeFallEventsRepository();
     final notifications = _FakeNotificationService();
+    final backend = _FakeBackendGateway(const []);
     final states = <AlertUiState>[];
     final coordinator = _coordinator(
       eventRecorder: repo,
       notificationGateway: notifications,
+      backendGateway: backend,
     );
     final sub = coordinator.stateStream.listen(states.add);
 
@@ -253,13 +263,14 @@ void main() {
 
     await Future<void>.delayed(const Duration(milliseconds: 50));
 
-    expect(repo.savedEvents.single.status, FallEventStatus.timedOutNoSms);
+    expect(backend.callCount, 1);
+    expect(repo.savedEvents.single.status, FallEventStatus.alertFailed);
     expect(notifications.cancelCount, 1);
     expect(states.map((state) => state.phase), [
       AlertPhase.countdown,
       AlertPhase.gettingLocation,
       AlertPhase.sendingAlert,
-      AlertPhase.timedOutNoSms,
+      AlertPhase.alertFailed,
     ]);
 
     await sub.cancel();
