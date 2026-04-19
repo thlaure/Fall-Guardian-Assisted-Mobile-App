@@ -3,6 +3,8 @@ package com.fallguardian
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
+import android.provider.Settings
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.os.Build
@@ -144,6 +146,7 @@ class MainActivity : FlutterActivity() {
         }
         flushPendingCancelToFlutter()
         flushPendingThresholdsToWatch()
+        requestFullScreenIntentPermissionIfNeeded()
         // Handle fall event launched via intent (activity was not running)
         if (isTrustedIntent(intent)) {
             intent?.getLongExtra("fall_timestamp", Long.MIN_VALUE)
@@ -274,6 +277,28 @@ class MainActivity : FlutterActivity() {
     private fun flushPendingCancelToFlutter() {
         if (!prefs.getBoolean(PENDING_CANCEL_KEY, false)) return
         sendCancelAlertToFlutter()
+    }
+
+    /**
+     * On Android 14+ (API 34), USE_FULL_SCREEN_INTENT requires an explicit user grant
+     * via system settings — declaring it in the manifest is not enough.
+     * Without it, fall alerts cannot wake the screen or show over the lock screen.
+     * We prompt once (tracked via SharedPreferences) so the user isn't bothered
+     * on every launch after they have already granted it.
+     */
+    private fun requestFullScreenIntentPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
+        val nm = getSystemService(NotificationManager::class.java)
+        if (nm.canUseFullScreenIntent()) return
+        val alreadyPrompted = prefs.getBoolean("full_screen_intent_prompted", false)
+        if (alreadyPrompted) return
+        prefs.edit().putBoolean("full_screen_intent_prompted", true).apply()
+        startActivity(
+            Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
+                data = Uri.parse("package:$packageName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        )
     }
 
     override fun onDestroy() {

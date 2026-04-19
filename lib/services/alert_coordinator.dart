@@ -128,6 +128,20 @@ class AlertCoordinator {
 
   Future<void> cancelFromWatch() => _cancel(notifyWatch: false);
 
+  /// Called by [FallAlertScreen] when the UI countdown reaches zero but the
+  /// coordinator is still in [AlertPhase.countdown]. This happens when the
+  /// Android OS paused the Flutter engine while the app was backgrounded,
+  /// preventing the internal [_timeoutTimer] callback from running on time.
+  /// Re-entrant calls are safe: the [_isCurrentAlert] and phase guards inside
+  /// [_handleTimeout] make them no-ops for any timestamp that no longer matches.
+  Future<void> handleExpiredCountdown(int timestamp) async {
+    if (!_isCurrentAlert(timestamp)) return;
+    if (_currentState?.phase != AlertPhase.countdown) return;
+    _timeoutTimer?.cancel();
+    _timeoutTimer = null;
+    await _handleTimeout(timestamp);
+  }
+
   Future<void> _cancel({required bool notifyWatch}) async {
     final timestamp = _activeTimestamp;
     _cancelTimers();
@@ -151,7 +165,7 @@ class AlertCoordinator {
 
     final event = FallEvent(
       id: _idGenerator.newId(),
-      timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true),
       status: FallEventStatus.cancelled,
     );
     await _eventRecorder.add(event);
@@ -189,17 +203,18 @@ class AlertCoordinator {
     final contacts = await _contactsStore.getAll();
     if (!_isCurrentAlert(timestamp)) return;
 
-    final outcome = contacts.isEmpty
-        ? _noContactsOutcome(timestamp, position, l10n.smsFailed)
-        : await _backendEscalationOutcome(
-            clientAlertId: clientAlertId,
-            timestamp: timestamp,
-            position: position,
-            contacts: contacts,
-            locale: _localeResolver.languageCode(),
-            smsFailedMessage: l10n.smsFailed,
-            alertSentMessageBuilder: l10n.alertSentCount,
-          );
+    // Always submit to the backend regardless of contacts: recording the fall
+    // and notifying contacts are two separate backend responsibilities.
+    // With no contacts the backend stores the event without sending any SMS.
+    final outcome = await _backendEscalationOutcome(
+      clientAlertId: clientAlertId,
+      timestamp: timestamp,
+      position: position,
+      contacts: contacts,
+      locale: _localeResolver.languageCode(),
+      smsFailedMessage: l10n.smsFailed,
+      alertSentMessageBuilder: l10n.alertSentCount,
+    );
     if (outcome == null || !_isCurrentAlert(timestamp)) return;
 
     await _eventRecorder.add(outcome.event);
@@ -256,25 +271,6 @@ class AlertCoordinator {
     );
   }
 
-  _AlertOutcome _noContactsOutcome(
-    int timestamp,
-    Position? position,
-    String message,
-  ) {
-    return _AlertOutcome(
-      event: FallEvent(
-        id: _idGenerator.newId(),
-        timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp),
-        status: FallEventStatus.timedOutNoSms,
-        latitude: position?.latitude,
-        longitude: position?.longitude,
-      ),
-      phase: AlertPhase.timedOutNoSms,
-      message: message,
-      dismissDelay: const Duration(seconds: 3),
-    );
-  }
-
   _AlertOutcome _smsOutcome({
     required int timestamp,
     required Position? position,
@@ -286,7 +282,7 @@ class AlertCoordinator {
     return _AlertOutcome(
       event: FallEvent(
         id: _idGenerator.newId(),
-        timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp),
+        timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true),
         status:
             smsFailed ? FallEventStatus.alertFailed : FallEventStatus.alertSent,
         latitude: position?.latitude,

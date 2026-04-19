@@ -142,6 +142,16 @@ class _FallAlertScreenState extends State<FallAlertScreen>
 
       if (_remaining <= 0) {
         timer.cancel();
+        // Guard: if the coordinator is still in countdown phase after the UI
+        // timer expired, its own Dart Timer was likely lost while the app was
+        // backgrounded (Android paused the Flutter engine). Kick it manually
+        // so the post-countdown flow (location → SMS → dismiss) still runs.
+        if (mounted && _phase == AlertPhase.countdown) {
+          unawaited(
+            widget.alertCoordinator
+                .handleExpiredCountdown(widget.fallTimestamp),
+          );
+        }
       }
     });
   }
