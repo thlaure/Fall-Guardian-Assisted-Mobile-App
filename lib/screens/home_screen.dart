@@ -161,7 +161,7 @@ class _NavButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Material(
-      color: cs.secondaryContainer,
+      color: cs.surfaceContainerHigh,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -170,7 +170,7 @@ class _NavButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           child: Row(
             children: [
-              Icon(icon, color: cs.onSecondaryContainer, size: 28),
+              Icon(icon, color: cs.primary, size: 28),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -179,7 +179,7 @@ class _NavButton extends StatelessWidget {
                     Text(
                       label,
                       style: TextStyle(
-                        color: cs.onSecondaryContainer,
+                        color: cs.onSurface,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -187,7 +187,7 @@ class _NavButton extends StatelessWidget {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        color: cs.onSecondaryContainer.withValues(alpha: 0.7),
+                        color: cs.onSurfaceVariant,
                         fontSize: 13,
                       ),
                     ),
@@ -196,7 +196,7 @@ class _NavButton extends StatelessWidget {
               ),
               Icon(
                 Icons.chevron_right,
-                color: cs.onSecondaryContainer.withValues(alpha: 0.6),
+                color: cs.onSurfaceVariant,
               ),
             ],
           ),
