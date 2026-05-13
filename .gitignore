@@ -28,10 +28,21 @@ migrate_working_dir/
 **/ios/Flutter/.last_build_id
 .dart_tool/
 .flutter-plugins-dependencies
+.metadata
+.packages
 .pub-cache/
 .pub/
 /build/
 /coverage/
+**/build/
+*.xcresult
+*.xcuserstate
+xcuserdata/
+DerivedData/
+**/*.xcworkspace/xcshareddata/swiftpm/
+**/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+**/.gradle/
+**/local.properties
 
 # Symbolication related
 app.*.symbols
