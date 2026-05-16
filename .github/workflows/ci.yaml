@@ -30,14 +30,8 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Check formatting
-        run: make format-check
-
-      - name: Analyze
-        run: make analyze
-
-      - name: Run tests with coverage
-        run: make coverage
+      - name: Run deterministic quality checks
+        run: make quality
 
       - name: Build Android APK (debug)
         run: make build-android

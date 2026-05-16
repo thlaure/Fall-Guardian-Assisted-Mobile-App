@@ -21,6 +21,7 @@ Always:
 - prefer readable, explicit code over clever Flutter/platform tricks
 - add concise comments for mobile/platform concepts, async flows, native bridges, permissions, background execution, and safety-critical alert behavior when they are not obvious to a non-mobile developer
 - keep automated line coverage at or above 90%; coverage must come from useful behavior, contract, edge-case, and regression tests, not shallow line execution
+- enforce the 90% coverage gate on behavior code through `make quality`; UI rendering, localization text, and thin platform-plugin wrappers may be excluded from the threshold when their useful behavior is covered elsewhere
 - run `flutter analyze` after Dart changes when feasible
 - run `flutter test` for behavior changes when tests exist or are added
 
