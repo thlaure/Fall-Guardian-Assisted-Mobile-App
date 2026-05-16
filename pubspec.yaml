@@ -24,7 +24,7 @@ dependencies:
   shared_preferences: ^2.2.2
 
   # Local notifications (countdown alert)
-  flutter_local_notifications: ^17.0.0
+  flutter_local_notifications: ^21.0.0
 
   # UUID for fall event IDs
   uuid: ^4.3.3
