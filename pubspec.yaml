@@ -21,7 +21,7 @@ dependencies:
   flutter_sms: ^3.0.1
 
   # Local persistence
-  shared_preferences: ^2.2.2
+  shared_preferences: ^2.5.5
 
   # Local notifications (countdown alert)
   flutter_local_notifications: ^17.0.0
