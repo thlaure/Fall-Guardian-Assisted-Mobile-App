@@ -6,6 +6,7 @@
 // "Local" means the notification is generated on the device itself (by our app)
 // rather than sent from a server (which would be a "push" / "remote" notification).
 import 'dart:io';
+import 'dart:developer' as developer;
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -79,7 +80,7 @@ class NotificationService implements AlertNotificationGateway {
       const androidSettings =
           AndroidInitializationSettings('@mipmap/ic_launcher');
       await _plugin.initialize(
-        const InitializationSettings(android: androidSettings),
+        settings: const InitializationSettings(android: androidSettings),
       );
 
       // Android 13+ requires POST_NOTIFICATIONS at runtime.
@@ -140,10 +141,11 @@ class NotificationService implements AlertNotificationGateway {
     // (1) for every fall notification means a new fall event replaces the
     // previous one instead of stacking multiple banners.
     await _plugin.show(
-      1, // notification ID
-      title,
-      body,
-      const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      id: 1, // notification ID
+      title: title,
+      body: body,
+      notificationDetails:
+          const NotificationDetails(android: androidDetails, iOS: iosDetails),
     );
   }
 
@@ -156,6 +158,18 @@ class NotificationService implements AlertNotificationGateway {
   /// shade after the situation has already been handled.
   @override
   Future<void> cancelAll() async {
-    await _plugin.cancelAll();
+    try {
+      await _plugin.cancelAll();
+    } catch (error, stackTrace) {
+      // Notification cleanup must never block the safety-critical alert state
+      // transition. This can happen in widget tests before the plugin platform
+      // is registered, and on devices if the OS notification service is absent.
+      developer.log(
+        'cancelAll failed',
+        name: 'NotificationService',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 }

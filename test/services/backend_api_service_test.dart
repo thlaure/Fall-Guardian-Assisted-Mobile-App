@@ -98,7 +98,7 @@ void main() {
     });
 
     final service = BackendApiService(store: store, client: client);
-    final notified = await service.submitFallAlert(
+    await service.submitFallAlert(
       clientAlertId: 'alert-1',
       fallTimestamp: DateTime.utc(2026, 4, 9, 10).millisecondsSinceEpoch,
       locale: 'en',
@@ -110,7 +110,6 @@ void main() {
       ],
     );
 
-    expect(notified, ['Alice', 'Bob']);
     expect(requests, [
       'POST /api/v1/devices/register',
       'POST /api/v1/fall-alerts',

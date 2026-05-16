@@ -27,7 +27,7 @@ abstract class AlertBackendGateway {
 
   Future<void> syncContacts(List<Contact> contacts);
 
-  Future<List<String>> submitFallAlert({
+  Future<void> submitFallAlert({
     required String clientAlertId,
     required int fallTimestamp,
     required String locale,

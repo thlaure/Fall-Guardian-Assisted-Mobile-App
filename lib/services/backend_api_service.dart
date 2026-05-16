@@ -51,7 +51,7 @@ class BackendApiService implements AlertBackendGateway {
   }
 
   @override
-  Future<List<String>> submitFallAlert({
+  Future<void> submitFallAlert({
     required String clientAlertId,
     required int fallTimestamp,
     required String locale,
@@ -83,7 +83,8 @@ class BackendApiService implements AlertBackendGateway {
       );
     }
 
-    return contacts.map((contact) => contact.name).toList(growable: false);
+    // The API acknowledges that the alert was accepted for dispatch. Actual
+    // caregiver push delivery happens asynchronously on the backend worker.
   }
 
   Future<Map<String, dynamic>> createInvite() async {

@@ -41,9 +41,9 @@ class _FakeNotificationService implements AlertNotificationGateway {
 }
 
 class _FakeBackendGateway implements AlertBackendGateway {
-  _FakeBackendGateway(this.result);
+  _FakeBackendGateway({this.shouldFail = false});
 
-  final List<String> result;
+  final bool shouldFail;
   String? lastClientAlertId;
   String? lastLocale;
   List<Contact>? lastContacts;
@@ -60,7 +60,7 @@ class _FakeBackendGateway implements AlertBackendGateway {
   Future<void> syncContacts(List<Contact> contacts) async {}
 
   @override
-  Future<List<String>> submitFallAlert({
+  Future<void> submitFallAlert({
     required String clientAlertId,
     required int fallTimestamp,
     required String locale,
@@ -75,7 +75,9 @@ class _FakeBackendGateway implements AlertBackendGateway {
     lastLatitude = latitude;
     lastLongitude = longitude;
     lastContacts = contacts;
-    return result;
+    if (shouldFail) {
+      throw Exception('backend unavailable');
+    }
   }
 
   @override
@@ -129,7 +131,7 @@ AlertCoordinator _coordinator({
     eventRecorder: eventRecorder ?? _FakeFallEventsRepository(),
     locationProvider: locationProvider ?? _FakeLocationService(),
     notificationGateway: notificationGateway ?? _FakeNotificationService(),
-    backendGateway: backendGateway ?? _FakeBackendGateway(const []),
+    backendGateway: backendGateway ?? _FakeBackendGateway(),
     watchGateway: watchGateway ?? _FakeWatchGateway(),
     localeResolver: localeResolver ?? const DeviceLocaleResolver(),
     clock: clock ?? _FakeClock(),
@@ -182,7 +184,7 @@ void main() {
 
     final repo = _FakeFallEventsRepository();
     final notifications = _FakeNotificationService();
-    final backend = _FakeBackendGateway(const []);
+    final backend = _FakeBackendGateway();
     final coordinator = _coordinator(
       eventRecorder: repo,
       notificationGateway: notifications,
@@ -226,7 +228,7 @@ void main() {
     final repo = _FakeFallEventsRepository();
     final notifications = _FakeNotificationService();
     final watchGateway = _FakeWatchGateway();
-    final backend = _FakeBackendGateway(const []);
+    final backend = _FakeBackendGateway();
     final coordinator = _coordinator(
       eventRecorder: repo,
       notificationGateway: notifications,
@@ -247,15 +249,14 @@ void main() {
   });
 
   test(
-      'timeout without contacts still submits to backend and records alertFailed',
+      'timeout without contacts still submits to backend and records alertSent',
       () async {
     // Even with no emergency contacts the backend is always called so that
-    // the fall event is persisted server-side for auditing. The backend
-    // returns an empty notified-contacts list, which the coordinator
-    // maps to alertFailed (no one was reached, but the event was recorded).
+    // the fall event is persisted server-side and can be dispatched through
+    // the linked caregiver workflow.
     final repo = _FakeFallEventsRepository();
     final notifications = _FakeNotificationService();
-    final backend = _FakeBackendGateway(const []);
+    final backend = _FakeBackendGateway();
     final states = <AlertUiState>[];
     final coordinator = _coordinator(
       eventRecorder: repo,
@@ -272,13 +273,13 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 50));
 
     expect(backend.callCount, 1);
-    expect(repo.savedEvents.single.status, FallEventStatus.alertFailed);
+    expect(repo.savedEvents.single.status, FallEventStatus.alertSent);
     expect(notifications.cancelCount, 1);
     expect(states.map((state) => state.phase), [
       AlertPhase.countdown,
       AlertPhase.gettingLocation,
       AlertPhase.sendingAlert,
-      AlertPhase.alertFailed,
+      AlertPhase.alertSent,
     ]);
 
     await sub.cancel();
@@ -288,7 +289,7 @@ void main() {
   test('reconcileActiveAlert triggers timeout after lifecycle pause', () async {
     final repo = _FakeFallEventsRepository();
     final notifications = _FakeNotificationService();
-    final backend = _FakeBackendGateway(const []);
+    final backend = _FakeBackendGateway();
     final clock = _FakeClock(DateTime(2026, 4, 19, 12, 0, 0));
     final states = <AlertUiState>[];
     final coordinator = _coordinator(
@@ -307,23 +308,24 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 50));
 
     expect(backend.callCount, 1);
-    expect(repo.savedEvents.single.status, FallEventStatus.alertFailed);
+    expect(repo.savedEvents.single.status, FallEventStatus.alertSent);
     expect(notifications.cancelCount, 1);
     expect(states.map((state) => state.phase), [
       AlertPhase.countdown,
       AlertPhase.gettingLocation,
       AlertPhase.sendingAlert,
-      AlertPhase.alertFailed,
+      AlertPhase.alertSent,
     ]);
 
     await sub.cancel();
     coordinator.dispose();
   });
 
-  test('timeout with contacts and successful sms records alertSent', () async {
+  test('timeout with contacts and backend submission records alertSent',
+      () async {
     final repo = _FakeFallEventsRepository();
     final notifications = _FakeNotificationService();
-    final backend = _FakeBackendGateway(const ['Alice', 'Bob']);
+    final backend = _FakeBackendGateway();
     final states = <AlertUiState>[];
     final coordinator = _coordinator(
       contactsStore: _FakeContactsRepository(const [
@@ -359,7 +361,8 @@ void main() {
     coordinator.dispose();
   });
 
-  test('timeout with contacts and failed sms records alertFailed', () async {
+  test('timeout with contacts and backend failure records alertFailed',
+      () async {
     final repo = _FakeFallEventsRepository();
     final notifications = _FakeNotificationService();
     final states = <AlertUiState>[];
@@ -369,7 +372,7 @@ void main() {
       ]),
       eventRecorder: repo,
       notificationGateway: notifications,
-      backendGateway: _FakeBackendGateway(const []),
+      backendGateway: _FakeBackendGateway(shouldFail: true),
     );
     final sub = coordinator.stateStream.listen(states.add);
 

@@ -213,8 +213,8 @@ class AlertCoordinator {
       position: position,
       contacts: contacts,
       locale: _localeResolver.languageCode(),
-      smsFailedMessage: l10n.smsFailed,
-      alertSentMessageBuilder: l10n.alertSentCount,
+      alertFailedMessage: l10n.smsFailed,
+      alertSubmittedMessage: l10n.alertSentCount(contacts.length),
     );
     if (outcome == null || !_isCurrentAlert(timestamp)) return;
 
@@ -240,16 +240,15 @@ class AlertCoordinator {
     required Position? position,
     required List<Contact> contacts,
     required String locale,
-    required String smsFailedMessage,
-    required String Function(int notifiedCount) alertSentMessageBuilder,
+    required String alertFailedMessage,
+    required String alertSubmittedMessage,
   }) async {
     if (clientAlertId == null) {
       return null;
     }
 
-    List<String> notified;
     try {
-      notified = await _backendGateway.submitFallAlert(
+      await _backendGateway.submitFallAlert(
         clientAlertId: clientAlertId,
         fallTimestamp: timestamp,
         locale: locale,
@@ -258,41 +257,39 @@ class AlertCoordinator {
         contacts: contacts,
       );
     } catch (_) {
-      notified = const [];
+      if (!_isCurrentAlert(timestamp)) return null;
+      _submittedToBackend = false;
+
+      return _AlertOutcome(
+        event: FallEvent(
+          id: _idGenerator.newId(),
+          timestamp:
+              DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true),
+          status: FallEventStatus.alertFailed,
+          latitude: position?.latitude,
+          longitude: position?.longitude,
+        ),
+        phase: AlertPhase.alertFailed,
+        message: alertFailedMessage,
+        dismissDelay: const Duration(seconds: 5),
+      );
     }
+
     if (!_isCurrentAlert(timestamp)) return null;
-    _submittedToBackend = notified.isNotEmpty;
+    _submittedToBackend = true;
 
-    return _smsOutcome(
-      timestamp: timestamp,
-      position: position,
-      notifiedContacts: notified,
-      smsFailedMessage: smsFailedMessage,
-      smsSuccessMessage: alertSentMessageBuilder(notified.length),
-    );
-  }
-
-  _AlertOutcome _smsOutcome({
-    required int timestamp,
-    required Position? position,
-    required List<String> notifiedContacts,
-    required String smsFailedMessage,
-    required String smsSuccessMessage,
-  }) {
-    final smsFailed = notifiedContacts.isEmpty;
     return _AlertOutcome(
       event: FallEvent(
         id: _idGenerator.newId(),
         timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true),
-        status:
-            smsFailed ? FallEventStatus.alertFailed : FallEventStatus.alertSent,
+        status: FallEventStatus.alertSent,
         latitude: position?.latitude,
         longitude: position?.longitude,
-        notifiedContacts: notifiedContacts,
+        notifiedContacts: contacts.map((contact) => contact.name).toList(),
       ),
-      phase: smsFailed ? AlertPhase.alertFailed : AlertPhase.alertSent,
-      message: smsFailed ? smsFailedMessage : smsSuccessMessage,
-      dismissDelay: Duration(seconds: smsFailed ? 5 : 2),
+      phase: AlertPhase.alertSent,
+      message: alertSubmittedMessage,
+      dismissDelay: const Duration(seconds: 2),
     );
   }
 

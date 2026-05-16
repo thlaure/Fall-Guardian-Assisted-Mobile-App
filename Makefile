@@ -1,4 +1,4 @@
-.PHONY: help install format format-check analyze test quality check build-android build-ios clean
+.PHONY: help install format format-check analyze test coverage quality check build-android build-ios clean
 
 .DEFAULT_GOAL := help
 
@@ -22,7 +22,10 @@ analyze: ## Run Flutter static analysis
 test: ## Run Flutter tests
 	flutter test
 
-quality: format-check analyze test ## Run deterministic quality checks
+coverage: ## Run Flutter tests with coverage output
+	flutter test --coverage
+
+quality: format-check analyze coverage ## Run deterministic quality checks
 
 check: quality ## Run the default verification set
 

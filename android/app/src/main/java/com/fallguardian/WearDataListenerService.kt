@@ -8,6 +8,9 @@ import android.content.Context
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.google.android.gms.tasks.Tasks
+import com.google.android.gms.wearable.DataEvent
+import com.google.android.gms.wearable.DataEventBuffer
+import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
@@ -36,6 +39,21 @@ class WearDataListenerService : WearableListenerService() {
         // Same channel ID as flutter_local_notifications so the user sees one
         // "Fall Alerts" entry in system notification settings.
         private const val CHANNEL_ID = "fall_guardian_alerts"
+    }
+
+    override fun onDataChanged(dataEvents: DataEventBuffer) {
+        dataEvents.forEach { event ->
+            if (event.type != DataEvent.TYPE_CHANGED) return@forEach
+
+            when (event.dataItem.uri.path) {
+                "/fall_event" -> {
+                    val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
+                    val timestamp = dataMap.getLong("timestamp", System.currentTimeMillis())
+                    handleFallDetected(timestamp)
+                }
+                "/cancel_alert" -> handleCancelAlert()
+            }
+        }
     }
 
     override fun onMessageReceived(messageEvent: MessageEvent) {

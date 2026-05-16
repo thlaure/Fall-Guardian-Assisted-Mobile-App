@@ -75,10 +75,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendingAlert => 'Sending alert…';
   @override
   String get smsFailed =>
-      '⚠️ Alert delivery failed. Contact your caregivers manually.';
+      '⚠️ Alert submission failed. Contact your caregivers manually.';
   @override
   String alertSentCount(int count) =>
-      'Alert sent to $count caregiver${count == 1 ? '' : 's'}.';
+      'Alert submitted to $count caregiver${count == 1 ? '' : 's'}.';
   @override
   String get cancelAlert => "I'm OK — Cancel Alert";
 
