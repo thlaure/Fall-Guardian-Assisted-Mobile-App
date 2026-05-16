@@ -15,7 +15,7 @@ dependencies:
     sdk: flutter
 
   # GPS location
-  geolocator: ^10.1.0
+  geolocator: ^14.0.2
 
   # SMS sending
   flutter_sms: ^3.0.1
