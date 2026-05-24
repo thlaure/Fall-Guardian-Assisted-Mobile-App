@@ -77,6 +77,30 @@ void main() {
     );
   });
 
+  test('ensureReady accepts an HTTPS backend URL in release mode', () async {
+    final service = BackendApiService(
+      store: store,
+      baseUrl: 'https://api.example.test',
+      releaseMode: true,
+      client: MockClient((request) async {
+        expect(request.url.scheme, 'https');
+        expect(request.url.path, '/api/v1/devices/register');
+        return http.Response(
+          jsonEncode({
+            'deviceId': 'device-1',
+            'deviceToken': 'token-1',
+          }),
+          201,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+
+    await service.ensureReady();
+
+    expect(store.data['backend_device_token'], 'token-1');
+  });
+
   test('submitFallAlert posts alert without remote contact sync', () async {
     final requests = <String>[];
     final client = MockClient((request) async {
