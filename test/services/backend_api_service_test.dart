@@ -61,6 +61,22 @@ void main() {
     expect(store.data['backend_device_token'], 'token-1');
   });
 
+  test('ensureReady rejects insecure backend URL in release mode', () async {
+    final service = BackendApiService(
+      store: store,
+      baseUrl: 'http://api.example.test',
+      releaseMode: true,
+      client: MockClient((request) async {
+        fail('Release configuration must be rejected before an HTTP request.');
+      }),
+    );
+
+    await expectLater(
+      service.ensureReady(),
+      throwsA(isA<StateError>()),
+    );
+  });
+
   test('submitFallAlert posts alert without remote contact sync', () async {
     final requests = <String>[];
     final client = MockClient((request) async {

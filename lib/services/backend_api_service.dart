@@ -14,9 +14,13 @@ class BackendApiService implements AlertBackendGateway {
   BackendApiService({
     KeyValueStore? store,
     http.Client? client,
+    String? baseUrl,
+    bool? releaseMode,
     Duration? requestTimeout,
   })  : _store = store ?? SecureKeyValueStore(),
         _client = client ?? http.Client(),
+        _baseUrlOverride = baseUrl,
+        _releaseMode = releaseMode ?? kReleaseMode,
         _requestTimeout = requestTimeout ?? const Duration(seconds: 10);
 
   static const _deviceIdKey = 'backend_device_id';
@@ -24,6 +28,8 @@ class BackendApiService implements AlertBackendGateway {
 
   final KeyValueStore _store;
   final http.Client _client;
+  final String? _baseUrlOverride;
+  final bool _releaseMode;
   final Duration _requestTimeout;
 
   // On a physical iOS device 127.0.0.1 resolves to the phone, not the Mac.
@@ -32,16 +38,28 @@ class BackendApiService implements AlertBackendGateway {
   static const _devMachineLanIp = '172.16.20.73';
 
   String get _baseUrl {
-    const defined = String.fromEnvironment('BACKEND_BASE_URL');
-    if (defined.isNotEmpty) {
-      return defined;
+    if (_baseUrlOverride case final override? when override.isNotEmpty) {
+      return _validateBaseUrl(override);
     }
 
-    if (kReleaseMode) {
+    const defined = String.fromEnvironment('BACKEND_BASE_URL');
+    if (defined.isNotEmpty) {
+      return _validateBaseUrl(defined);
+    }
+
+    if (_releaseMode) {
       throw StateError('BACKEND_BASE_URL must be set for release builds.');
     }
 
     return 'http://$_devMachineLanIp:8002';
+  }
+
+  String _validateBaseUrl(String baseUrl) {
+    if (_releaseMode && Uri.tryParse(baseUrl)?.scheme != 'https') {
+      throw StateError('BACKEND_BASE_URL must use HTTPS for release builds.');
+    }
+
+    return baseUrl;
   }
 
   @override
